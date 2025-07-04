@@ -231,7 +231,7 @@ io.on('connection', (socket) => {
       }, 1000);
     }
   });
-
+  
   // Grupo pede dica extra
   socket.on('pedirDica', () => {
     const codigo = socket.sala;

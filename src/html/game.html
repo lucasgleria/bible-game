@@ -113,6 +113,12 @@
       timerEl.classList.remove('danger');
       timerEl.style.animation = '';
     }
+
+    const savedState = localStorage.getItem('lastGameState');
+      if (savedState && typeof renderMultiplayerState === 'function') {
+        renderMultiplayerState(JSON.parse(savedState));
+      }
+
   </script>
   <script type="module" src="../js/main.js"></script>
   <style>

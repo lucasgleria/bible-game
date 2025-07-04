@@ -113,6 +113,12 @@
       console.log('[INTERMISSION] Evento iniciarJogo recebido! Redirecionando para game.html');
       setTimeout(() => window.location.href = 'game.html', 1200);
     });
+
+    window.salaSocket.onIniciarJogo((estadoInicial) => {
+      localStorage.setItem('lastGameState', JSON.stringify(estadoInicial));
+      window.location.href = 'game.html';
+    });
+
   </script>
 </body>
 </html> 
