@@ -1,22 +1,266 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Encerramento - Bible Game</title>
+  <title>Fim de Jogo - Perfil Bíblico</title>
   <link rel="stylesheet" href="../css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <div id="app">
   <h1>Fim de Jogo</h1>
-  <p id="end-msg">Obrigado por jogar!</p>
-  <button onclick="window.location.href='../../index.html'" style="margin-top:24px;padding:12px 32px;font-size:1.1em;border-radius:10px;background:var(--primary);color:#fff;border:none;cursor:pointer;">Voltar ao início</button>
+    
+    <div class="card" id="results-card" style="max-width: 420px; margin: 24px auto;">
+      <h2 style="color: var(--primary); margin-bottom: 20px; font-size: 1.4em;">Resultados Finais</h2>
+      
+      <div id="results-container">
+        <!-- Os resultados serão inseridos aqui via JavaScript -->
+      </div>
+      
+      <div id="winner-announcement" style="margin-top: 24px; padding: 16px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 1.2em;">
+        <!-- Anúncio do vencedor será inserido aqui -->
+      </div>
+    </div>
+    
+    <div class="card" style="max-width: 420px; margin: 18px auto; background: #f8f8fa;">
+      <h3 style="color: var(--primary); margin-bottom: 16px; font-size: 1.1em;">Estatísticas do Jogo</h3>
+      <div id="game-stats">
+        <!-- Estatísticas adicionais serão inseridas aqui -->
+      </div>
+    </div>
+    
+    <div style="margin-top: 32px;">
+      <button id="restart-btn" style="padding: 16px 32px; font-size: 1.2em; margin-right: 12px; background: var(--primary); color: #fff; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+        Jogar Novamente
+      </button>
+      <button id="home-btn" style="padding: 16px 32px; font-size: 1.2em; background: var(--accent); color: #fff; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+        Voltar ao Início
+      </button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="../js/socket.js"></script>
   <script>
-    // Exibir mensagem de vencedor/empate se dados disponíveis
+    // Dados do jogo (serão obtidos do localStorage ou URL params)
+    let gameResults = null;
+    
+    // Função para obter dados do jogo
+    function getGameResults() {
+      // Tentar obter do localStorage primeiro
+      const savedResults = localStorage.getItem('gameResults');
+      if (savedResults) {
+        try {
+          return JSON.parse(savedResults);
+        } catch (e) {
+          console.error('Erro ao parsear resultados salvos:', e);
+        }
+      }
+      
+      // Se não houver no localStorage, tentar URL params
     const params = new URLSearchParams(window.location.search);
-    const vencedor = params.get('vencedor');
-    if (vencedor) {
-      document.getElementById('end-msg').textContent = vencedor;
+      const pontuacao = params.get('pontuacao');
+      const acertos = params.get('acertos');
+      const grupos = params.get('grupos');
+      
+      if (pontuacao && acertos && grupos) {
+        return {
+          pontuacao: JSON.parse(pontuacao),
+          acertos: JSON.parse(acertos),
+          grupos: JSON.parse(grupos)
+        };
+      }
+      
+      // Dados padrão para demonstração
+      return {
+        pontuacao: [15, 12],
+        acertos: [3, 2],
+        grupos: ['Grupo A', 'Grupo B']
+      };
     }
+    
+    // Função para renderizar os resultados
+    function renderResults(results) {
+      const container = document.getElementById('results-container');
+      const winnerDiv = document.getElementById('winner-announcement');
+      const statsDiv = document.getElementById('game-stats');
+      
+      if (!results || !results.grupos || results.grupos.length < 2) {
+        container.innerHTML = '<p style="color: #888; text-align: center;">Dados do jogo não disponíveis.</p>';
+        return;
+      }
+      
+      // Determinar vencedor
+      const grupo1Pontos = results.pontuacao[0] || 0;
+      const grupo2Pontos = results.pontuacao[1] || 0;
+      const grupo1Acertos = results.acertos[0] || 0;
+      const grupo2Acertos = results.acertos[1] || 0;
+      
+      let winner = null;
+      let winnerMessage = '';
+      
+      if (grupo1Pontos > grupo2Pontos) {
+        winner = results.grupos[0];
+        winnerMessage = `🏆 ${winner} venceu!`;
+      } else if (grupo2Pontos > grupo1Pontos) {
+        winner = results.grupos[1];
+        winnerMessage = `🏆 ${winner} venceu!`;
+      } else {
+        winnerMessage = '🤝 Empate!';
+      }
+      
+      // Renderizar placar dos grupos
+      let html = '';
+      
+      // Grupo 1
+      const grupo1Style = grupo1Pontos > grupo2Pontos ? 
+        'background: linear-gradient(135deg, #ffe066, #fffbe6); border: 2px solid #ffd700;' : 
+        'background: #fff; border: 1px solid #ddd;';
+      
+      html += `
+        <div class="card" style="${grupo1Style} margin-bottom: 16px; padding: 20px;">
+          <h3 style="margin: 0 0 12px 0; color: var(--primary); font-size: 1.2em;">${results.grupos[0]}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <p style="margin: 0; font-size: 1.1em; color: var(--accent);">
+                <strong>${grupo1Pontos}</strong> pontos
+              </p>
+              <p style="margin: 4px 0 0 0; color: #666; font-size: 0.95em;">
+                ${grupo1Acertos} acertos
+              </p>
+            </div>
+            <div style="font-size: 2em; color: var(--accent);">
+              ${grupo1Pontos > grupo2Pontos ? '🥇' : grupo1Pontos === grupo2Pontos ? '🥈' : '🥉'}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Grupo 2
+      const grupo2Style = grupo2Pontos > grupo1Pontos ? 
+        'background: linear-gradient(135deg, #ffe066, #fffbe6); border: 2px solid #ffd700;' : 
+        'background: #fff; border: 1px solid #ddd;';
+      
+      html += `
+        <div class="card" style="${grupo2Style} margin-bottom: 16px; padding: 20px;">
+          <h3 style="margin: 0 0 12px 0; color: var(--primary); font-size: 1.2em;">${results.grupos[1]}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <p style="margin: 0; font-size: 1.1em; color: var(--accent);">
+                <strong>${grupo2Pontos}</strong> pontos
+              </p>
+              <p style="margin: 4px 0 0 0; color: #666; font-size: 0.95em;">
+                ${grupo2Acertos} acertos
+              </p>
+            </div>
+            <div style="font-size: 2em; color: var(--accent);">
+              ${grupo2Pontos > grupo1Pontos ? '🥇' : grupo2Pontos === grupo1Pontos ? '🥈' : '🥉'}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      container.innerHTML = html;
+      
+      // Anúncio do vencedor
+      winnerDiv.innerHTML = `
+        <div style="padding: 16px; background: ${grupo1Pontos === grupo2Pontos ? '#f0f8ff' : '#fff3cd'}; border-radius: 8px;">
+          <p style="margin: 0; font-size: 1.3em; color: ${grupo1Pontos === grupo2Pontos ? 'var(--primary)' : '#856404'};">
+            ${winnerMessage}
+          </p>
+        </div>
+      `;
+      
+      // Estatísticas adicionais
+      const totalPontos = grupo1Pontos + grupo2Pontos;
+      const totalAcertos = grupo1Acertos + grupo2Acertos;
+      const mediaPontos = totalPontos / 2;
+      
+      statsDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: center;">
+          <div>
+            <p style="margin: 0; font-size: 1.1em; color: var(--primary); font-weight: 600;">${totalPontos}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 0.9em;">Total de Pontos</p>
+          </div>
+          <div>
+            <p style="margin: 0; font-size: 1.1em; color: var(--primary); font-weight: 600;">${totalAcertos}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 0.9em;">Total de Acertos</p>
+          </div>
+          <div>
+            <p style="margin: 0; font-size: 1.1em; color: var(--primary); font-weight: 600;">${mediaPontos.toFixed(1)}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 0.9em;">Média por Grupo</p>
+          </div>
+          <div>
+            <p style="margin: 0; font-size: 1.1em; color: var(--primary); font-weight: 600;">${Math.max(grupo1Pontos, grupo2Pontos)}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 0.9em;">Maior Pontuação</p>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Função para limpar dados do jogo
+    function clearGameData() {
+      localStorage.removeItem('gameResults');
+      localStorage.removeItem('teamName');
+      localStorage.removeItem('roomCode');
+      localStorage.removeItem('groupUUID');
+      localStorage.removeItem('myGroupId');
+      localStorage.removeItem('mySocketId');
+      localStorage.removeItem('lastGameState');
+    }
+    
+    // Event listeners
+    document.getElementById('restart-btn').addEventListener('click', function() {
+      // Limpar dados antigos
+      clearGameData();
+      // Redirecionar para customização
+      window.location.href = 'customization.html';
+    });
+    
+    document.getElementById('home-btn').addEventListener('click', function() {
+      // Limpar dados antigos
+      clearGameData();
+      // Redirecionar para início
+      window.location.href = '../../index.html';
+    });
+    
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', function() {
+      // Obter resultados do jogo
+      gameResults = getGameResults();
+      
+      // Renderizar resultados
+      renderResults(gameResults);
+      
+      // Salvar resultados no localStorage para backup
+      if (gameResults) {
+        localStorage.setItem('gameResults', JSON.stringify(gameResults));
+      }
+      
+      // Se estiver conectado via socket, escutar evento de fim de jogo
+      if (window.salaSocket) {
+        window.salaSocket.onFimJogo((data) => {
+          console.log('[END] Evento fimJogo recebido:', data);
+          gameResults = data;
+          renderResults(gameResults);
+          localStorage.setItem('gameResults', JSON.stringify(gameResults));
+        });
+      }
+    });
   </script>
+  
+  <style>
+    @media (max-width: 600px) {
+      #app { padding: 16px 8px; }
+      .card { margin: 16px auto; padding: 16px; }
+      #restart-btn, #home-btn { 
+        display: block; 
+        width: 100%; 
+        margin: 8px 0; 
+        padding: 14px 24px; 
+      }
+    }
+  </style>
 </body>
 </html> 

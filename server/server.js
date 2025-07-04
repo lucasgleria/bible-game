@@ -105,6 +105,28 @@ const cartas = [
   }
 ];
 
+// Função para salvar resultado no leaderboard
+function salvarResultadoLeaderboard(grupo, pontos, acertos) {
+  const fs = require('fs');
+  const path = require('path');
+  const LEADERBOARD_PATH = path.join(__dirname, 'leaderboard.json');
+  const novoRegistro = { grupo, pontos, acertos, data: new Date().toISOString() };
+  fs.readFile(LEADERBOARD_PATH, 'utf8', (err, data) => {
+    let leaderboard = [];
+    if (!err && data) {
+      try {
+        leaderboard = JSON.parse(data);
+      } catch (e) { leaderboard = []; }
+    }
+    leaderboard.push(novoRegistro);
+    fs.writeFile(LEADERBOARD_PATH, JSON.stringify(leaderboard, null, 2), err => {
+      if (err) {
+        console.error('[ERRO] Falha ao salvar leaderboard:', err);
+      }
+    });
+  });
+}
+
 io.on('connection', (socket) => {
   console.log('Novo cliente conectado:', socket.id);
 

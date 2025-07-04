@@ -133,9 +133,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
       // Fim de jogo
       window.salaSocket.onFimJogo(({ pontuacao, acertos, grupos }) => {
-        // Assegurar que grupos são objetos com propriedade .nome
-        let msg = `Fim do jogo!\n${grupos[0].nome}: ${pontuacao[0]} pontos (${acertos[0]} acertos)\n${grupos[1].nome}: ${pontuacao[1]} pontos (${acertos[1]} acertos)`;
-        alert(msg);
+        // Salvar resultados no localStorage para a tela end.html
+        const gameResults = {
+          pontuacao: pontuacao,
+          acertos: acertos,
+          grupos: grupos
+        };
+        localStorage.setItem('gameResults', JSON.stringify(gameResults));
+        
+        // Redirecionar para tela de fim de jogo
         window.location.href = 'end.html';
       });
     } else {
