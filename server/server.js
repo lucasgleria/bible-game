@@ -156,6 +156,17 @@ io.on('connection', (socket) => {
     console.log(`[LOG] Estado da sala ${codigo} após entrada:`, JSON.stringify(salas[codigo]));
   });
 
+  // Evento para configurar a sala (apenas pelo criador, uma vez)
+  socket.on('configurarSala', ({ codigo, configuracoes }, callback) => {
+    const sala = salas[codigo];
+    if (!sala) return callback && callback({ sucesso: false, mensagem: 'Sala não encontrada.' });
+    if (sala.configurado) return callback && callback({ sucesso: false, mensagem: 'Sala já configurada.' });
+    sala.configuracoes = configuracoes;
+    sala.configurado = true;
+    console.log(`[LOG] Sala ${codigo} configurada:`, configuracoes);
+    callback && callback({ sucesso: true });
+  });
+
   // Marcar grupo como pronto
   socket.on('grupoPronto', () => {
     const codigo = socket.sala;
@@ -173,7 +184,8 @@ io.on('connection', (socket) => {
       sala.turno = 0; // 0: grupo 1, 1: grupo 2
       sala.pontuacao = [0, 0];
       sala.acertos = [0, 0];
-      sala.maxRodadas = 5;
+      // Usar maxRodadas da configuração, se existir
+      sala.maxRodadas = (sala.configuracoes && sala.configuracoes.maxRodadas) ? sala.configuracoes.maxRodadas : 5;
       sala.cartasRestantes = [...cartas];
       shuffle(sala.cartasRestantes);
       sala.cartaAtual = sala.cartasRestantes.pop();
@@ -260,6 +272,24 @@ io.on('connection', (socket) => {
       grupos: sala.grupos.map(g => g.nome)
     });
   }
+
+  // Evento para fornecer o estado atual da sala para um socket
+  socket.on('pedirEstadoSala', (codigo, callback) => {
+    const sala = salas[codigo];
+    if (!sala || sala.estado !== 'jogo') return callback && callback(null);
+    callback && callback({
+      rodada: sala.rodada,
+      maxRodadas: sala.maxRodadas,
+      turno: sala.turno,
+      carta: {
+        categoria: sala.cartaAtual.categoria,
+        dicas: sala.cartaAtual.dicas.slice(0, sala.dicaAtual)
+      },
+      pontuacao: sala.pontuacao,
+      acertos: sala.acertos,
+      grupos: sala.grupos.map(g => g.nome)
+    });
+  });
 
   // Desconexão
   socket.on('disconnect', () => {

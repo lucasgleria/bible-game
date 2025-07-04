@@ -52,6 +52,16 @@ function onFimJogo(callback) {
   socket.on('fimJogo', callback);
 }
 
+// Configura a sala (apenas criador)
+function configurarSala(codigo, configuracoes, callback) {
+  socket.emit('configurarSala', { codigo, configuracoes }, callback);
+}
+
+// Solicita o estado atual da sala
+function pedirEstadoSala(codigo, callback) {
+  socket.emit('pedirEstadoSala', codigo, callback);
+}
+
 // Exporta funções para uso nas telas
 window.salaSocket = {
   criarSala,
@@ -64,5 +74,7 @@ window.salaSocket = {
   onAtualizarJogo,
   onFeedback,
   onFimJogo,
+  configurarSala,
+  pedirEstadoSala,
   _socket: socket
 }; 

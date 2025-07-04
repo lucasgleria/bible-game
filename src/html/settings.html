@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurações da Sala - Perfil Bíblico</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <h1>Configurações da Sala</h1>
+    <div class="card" style="max-width:340px;margin:40px auto 0 auto;padding:24px 18px;">
+      <label for="rounds" style="font-size:1.1em;font-weight:600;">Número de rodadas:</label>
+      <select id="rounds" style="width:100%;padding:10px;margin:12px 0 18px 0;font-size:1.1em;">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
+      <button id="save-settings-btn" style="width:100%;padding:12px 0;font-size:1.1em;">Salvar e Continuar</button>
+      <div id="settings-error" style="color:var(--danger);font-size:1em;margin-top:8px;min-height:22px;"></div>
+    </div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="../js/socket.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const saveBtn = document.getElementById('save-settings-btn');
+      const errorDiv = document.getElementById('settings-error');
+      const roundsSelect = document.getElementById('rounds');
+      const roomCode = localStorage.getItem('roomCode');
+      if (!roomCode) {
+        errorDiv.textContent = 'Código da sala não encontrado.';
+        saveBtn.disabled = true;
+        return;
+      }
+      saveBtn.onclick = function() {
+        const maxRodadas = parseInt(roundsSelect.value);
+        if (!maxRodadas || maxRodadas < 1 || maxRodadas > 50) {
+          errorDiv.textContent = 'Escolha um número de rodadas válido.';
+          return;
+        }
+        saveBtn.disabled = true;
+        errorDiv.textContent = '';
+        window.salaSocket.configurarSala(roomCode, { maxRodadas }, function(res) {
+          if (res && res.sucesso) {
+            window.location.href = 'intermission.html';
+          } else {
+            errorDiv.textContent = res && res.mensagem ? res.mensagem : 'Erro ao salvar configurações.';
+            saveBtn.disabled = false;
+          }
+        });
+      };
+    });
+  </script>
+</body>
+</html> 

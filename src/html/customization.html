@@ -86,7 +86,7 @@
             saveCreatedRoom(res.codigo, name);
             renderCreatedRooms();
             successDiv.textContent = `Sala criada! Código: ${res.codigo}`;
-            setTimeout(() => window.location.href = 'intermission.html', 1000);
+            setTimeout(() => window.location.href = 'settings.html', 1000);
           } else {
             errorDiv.textContent = 'Erro ao criar sala.';
           }
