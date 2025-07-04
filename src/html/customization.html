@@ -11,25 +11,114 @@
   <div id="app">
     <h1>Perfil Bíblico</h1>
     <div id="customization-screen" class="card">
-      <p style="font-size:1.2em;font-weight:600;margin-bottom:18px;">Qual o nome do seu time?</p>
-      <input type="text" id="team-name-input" placeholder="Digite o nome do time" maxlength="20" style="width:90%;max-width:260px;padding:12px;border-radius:10px;border:1.5px solid var(--primary);font-size:1.1em;margin-bottom:10px;outline:none;" />
-      <button id="start-custom-btn" style="width:100%;margin-top:10px;">Começar</button>
+      <p style="font-size:1.2em;font-weight:600;margin-bottom:18px;">Qual o nome do seu grupo?</p>
+      <input type="text" id="team-name-input" placeholder="Digite o nome do grupo" maxlength="20" style="width:90%;max-width:260px;padding:12px;border-radius:10px;border:1.5px solid var(--primary);font-size:1.1em;margin-bottom:10px;outline:none;" />
+      <input type="text" id="room-code-input" placeholder="Código da sala (opcional)" maxlength="4" style="width:90%;max-width:120px;padding:10px;border-radius:8px;border:1px solid #aaa;font-size:1em;margin-bottom:10px;outline:none;text-transform:uppercase;" />
+      <button id="create-room-btn" style="width:48%;margin-top:10px;">Criar Sala</button>
+      <button id="join-room-btn" style="width:48%;margin-top:10px;float:right;">Entrar na Sala</button>
       <div id="team-name-error" style="color:var(--danger);font-size:1em;margin-top:8px;min-height:22px;"></div>
+      <div id="room-success" style="color:var(--success);font-size:1em;margin-top:8px;min-height:22px;"></div>
+    </div>
+    <div id="created-rooms-section" class="card" style="margin-top:24px;padding:16px 12px;background:#f8f8fa;">
+      <h3 style="font-size:1.1em;margin-bottom:10px;">Salas criadas</h3>
+      <div id="created-rooms-list" style="font-size:1em;"></div>
     </div>
   </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="../js/socket.js"></script>
   <script>
-    document.getElementById('start-custom-btn').onclick = function() {
-      const name = document.getElementById('team-name-input').value.trim();
+    document.addEventListener('DOMContentLoaded', function() {
+      const teamInput = document.getElementById('team-name-input');
+      const roomInput = document.getElementById('room-code-input');
       const errorDiv = document.getElementById('team-name-error');
-      if (name.length < 2) {
-        errorDiv.textContent = 'Digite um nome válido (mínimo 2 letras)';
-        return;
+      const successDiv = document.getElementById('room-success');
+      // Gerenciar lista de salas criadas no localStorage
+      function getCreatedRooms() {
+        try {
+          return JSON.parse(localStorage.getItem('createdRooms') || '[]');
+        } catch { return []; }
       }
-      localStorage.setItem('teamName', name);
-      window.location.href = 'game.html';
-    };
-    document.getElementById('team-name-input').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') document.getElementById('start-custom-btn').onclick();
+      function saveCreatedRoom(code, name) {
+        let rooms = getCreatedRooms();
+        let myGroupId = localStorage.getItem('myGroupId');
+        if (!myGroupId) {
+          myGroupId = 'g_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('myGroupId', myGroupId);
+        }
+        if (!rooms.find(r => r.code === code)) {
+          rooms.push({ code, name, createdAt: Date.now(), myGroupId });
+          localStorage.setItem('createdRooms', JSON.stringify(rooms.slice(-10)));
+        }
+      }
+      function renderCreatedRooms() {
+        const listDiv = document.getElementById('created-rooms-list');
+        const rooms = getCreatedRooms();
+        if (rooms.length === 0) {
+          listDiv.innerHTML = '<span style="color:#888;">Nenhuma sala criada ainda.</span>';
+          return;
+        }
+        listDiv.innerHTML = rooms.map(r =>
+          `<button type="button" style="margin:2px 0 2px 0;padding:6px 12px;border-radius:7px;border:1px solid #bbb;background:#fff;cursor:pointer;" onclick="document.getElementById('room-code-input').value='${r.code}';">${r.code} <span style='color:#888;font-size:0.95em;'>(${r.name})</span></button>`
+        ).join('<br>');
+      }
+      renderCreatedRooms();
+      // Gera ou recupera um identificador único do grupo
+      function getOrCreateGroupUUID() {
+        let uuid = localStorage.getItem('groupUUID');
+        if (!uuid) {
+          uuid = 'g_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('groupUUID', uuid);
+        }
+        return uuid;
+      }
+      document.getElementById('create-room-btn').onclick = function() {
+        const name = teamInput.value.trim();
+        if (name.length < 2) {
+          errorDiv.textContent = 'Digite um nome válido (mínimo 2 letras)';
+          return;
+        }
+        errorDiv.textContent = '';
+        const groupUUID = getOrCreateGroupUUID();
+        window.salaSocket.criarSala(name, (res) => {
+          if (res.sucesso) {
+            localStorage.setItem('teamName', name);
+            localStorage.setItem('roomCode', res.codigo);
+            saveCreatedRoom(res.codigo, name);
+            renderCreatedRooms();
+            successDiv.textContent = `Sala criada! Código: ${res.codigo}`;
+            setTimeout(() => window.location.href = 'intermission.html', 1000);
+          } else {
+            errorDiv.textContent = 'Erro ao criar sala.';
+          }
+        }, groupUUID);
+      };
+      document.getElementById('join-room-btn').onclick = function() {
+        const name = teamInput.value.trim();
+        const code = roomInput.value.trim().toUpperCase();
+        if (name.length < 2) {
+          errorDiv.textContent = 'Digite um nome válido (mínimo 2 letras)';
+          return;
+        }
+        if (code.length !== 4) {
+          errorDiv.textContent = 'Digite um código de sala válido (4 caracteres)';
+          return;
+        }
+        errorDiv.textContent = '';
+        const groupUUID = getOrCreateGroupUUID();
+        window.salaSocket.entrarSala(code, name, (res) => {
+          if (res.sucesso) {
+            localStorage.setItem('teamName', name);
+            localStorage.setItem('roomCode', code);
+            successDiv.textContent = 'Entrou na sala com sucesso!';
+            setTimeout(() => window.location.href = 'intermission.html', 1000);
+          } else {
+            errorDiv.textContent = res.mensagem || 'Erro ao entrar na sala.';
+          }
+        }, groupUUID);
+      };
+      teamInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('create-room-btn').onclick();
+      });
     });
   </script>
 </body>

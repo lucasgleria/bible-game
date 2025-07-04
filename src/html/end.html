@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encerramento - Bible Game</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <h1>Fim de Jogo</h1>
+  <p id="end-msg">Obrigado por jogar!</p>
+  <button onclick="window.location.href='../../index.html'" style="margin-top:24px;padding:12px 32px;font-size:1.1em;border-radius:10px;background:var(--primary);color:#fff;border:none;cursor:pointer;">Voltar ao início</button>
+  <script>
+    // Exibir mensagem de vencedor/empate se dados disponíveis
+    const params = new URLSearchParams(window.location.search);
+    const vencedor = params.get('vencedor');
+    if (vencedor) {
+      document.getElementById('end-msg').textContent = vencedor;
+    }
+  </script>
+</body>
+</html> 

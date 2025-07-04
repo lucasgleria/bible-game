@@ -289,3 +289,74 @@ function shuffle(array) {
     [array[i], array[j]] = [array[j], array[i]];
   }
 }
+
+// --- INTEGRAÇÃO MULTIPLAYER ---
+const isMultiplayer = !!localStorage.getItem('roomCode');
+if (isMultiplayer && window.salaSocket) {
+  let meuGrupo = localStorage.getItem('teamName');
+  let grupoIndex = 0;
+  let timerInterval = null;
+  let tempoRestante = 60;
+
+  window.salaSocket.onAtualizarJogo((estado) => {
+    // Descobrir se sou grupo 1 ou 2
+    grupoIndex = estado.grupos.findIndex(n => n === meuGrupo);
+    // Atualizar placar
+    document.getElementById('team1-label').innerHTML = `${estado.grupos[0]}: <span id='score1'>${estado.pontuacao[0]}</span>`;
+    document.getElementById('score2').textContent = estado.pontuacao[1];
+    // Atualizar rodada
+    document.getElementById('category').textContent = `Categoria: ${estado.carta.categoria}`;
+    // Atualizar dicas
+    let ul = document.getElementById('hints');
+    ul.innerHTML = '';
+    estado.carta.dicas.forEach((hint, i) => {
+      let li = document.createElement('li');
+      li.textContent = `${i + 1}. ${hint}`;
+      ul.appendChild(li);
+    });
+    // Atualizar turno
+    if (estado.turno === grupoIndex) {
+      document.getElementById('answer-area').style.display = '';
+    } else {
+      document.getElementById('answer-area').style.display = 'none';
+    }
+    // Timer
+    clearInterval(timerInterval);
+    tempoRestante = 60;
+    renderTimer(tempoRestante, 60);
+    timerInterval = setInterval(() => {
+      tempoRestante--;
+      renderTimer(tempoRestante, 60);
+      if (tempoRestante <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('result').textContent = `Tempo esgotado!`;
+        setTimeout(() => {
+          document.getElementById('result').textContent = '';
+        }, 1200);
+      }
+    }, 1000);
+  });
+
+  document.querySelector('#answer-area button').onclick = function() {
+    const resposta = document.getElementById('guess').value;
+    window.salaSocket.responder(resposta);
+    document.getElementById('guess').value = '';
+  };
+
+  window.salaSocket.onFeedback(({ tipo, pontos }) => {
+    if (tipo === 'acerto') {
+      showFeedback('success', `Acertou! +${pontos} pontos`);
+    } else {
+      showFeedback('error', 'Errado');
+    }
+  });
+
+  window.salaSocket.onFimJogo(({ pontuacao, acertos, grupos }) => {
+    let msg = `Fim do jogo!\n${grupos[0]}: ${pontuacao[0]} pontos (${acertos[0]} acertos)\n${grupos[1]}: ${pontuacao[1]} pontos (${acertos[1]} acertos)`;
+    alert(msg);
+    window.location.href = 'end.html';
+  });
+
+  // Botão para pedir dica extra (pode ser adicionado na interface)
+  // window.salaSocket.pedirDica();
+}

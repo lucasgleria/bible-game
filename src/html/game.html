@@ -23,6 +23,7 @@
       <p id="team1-label">Grupo 1: <span id="score1">0</span></p>
       <p>Grupo 2: <span id="score2">0</span></p>
     </div>
+    <div id="turn-indicator" style="text-align:center;font-size:1.1em;font-weight:600;margin:10px 0 0 0;"></div>
     <div id="controls">
       <label for="rounds">Rodadas:</label>
       <select id="rounds">
@@ -34,15 +35,75 @@
       <button onclick="startGame()">Começar</button>
     </div>
     <div id="timer"></div>
+    <button id="dica-btn" style="display:none;margin:12px auto 0 auto;display:block;padding:10px 24px;font-size:1em;border-radius:8px;background:var(--primary);color:#fff;border:none;cursor:pointer;" title="Peça uma dica extra se estiver com dificuldade!">Pedir Dica</button>
     <div id="feedback-animation" style="display:none;"></div>
   </div>
   <audio id="heartbeat" src="../../heartbeat.mp3"></audio>
   <audio id="buzzer" src="../../buzzer.mp3"></audio>
-  <script src="../js/script.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="../js/socket.js"></script>
+  <script type="module" src="../js/main.js"></script>
   <script>
     // Atualizar nome do time no placar
     const teamName = localStorage.getItem('teamName') || 'Grupo 1';
+    const roomCode = localStorage.getItem('roomCode') || '';
     document.getElementById('team1-label').innerHTML = `${teamName}: <span id='score1'>0</span>`;
+    // Integração multiplayer: aguardar estado do jogo da sala
+    window.salaSocket.onIniciarJogo((data) => {
+      // Aqui pode-se inicializar o estado do jogo recebido do backend
+      // Exemplo: atualizar placar, rodada, etc.
+    });
+    // Futuro: receber atualizações de rodada, placar, etc.
+    // Controle do botão de dica extra
+    const dicaBtn = document.getElementById('dica-btn');
+    let dicasDisponiveis = 0;
+    let dicaTimeout = null;
+    if (window.salaSocket) {
+      window.salaSocket.onAtualizarJogo((estado) => {
+        dicasDisponiveis = estado.carta.dicas.length;
+        const teamName = localStorage.getItem('teamName');
+        const grupoIndex = estado.grupos.findIndex(n => n === teamName);
+        dicaBtn.style.display = (estado.turno === grupoIndex && dicasDisponiveis < 5) ? 'block' : 'none';
+        dicaBtn.disabled = false;
+        dicaBtn.title = dicaBtn.style.display === 'block' ? 'Peça uma dica extra se estiver com dificuldade!' : 'Aguarde sua vez ou todas as dicas já foram exibidas.';
+        // Indicar grupo da vez
+        document.getElementById('turn-indicator').textContent = `Vez de: ${estado.grupos[estado.turno]}`;
+      });
+      dicaBtn.onclick = function() {
+        dicaBtn.disabled = true;
+        dicaBtn.textContent = 'Aguardando dica...';
+        window.salaSocket.pedirDica();
+        clearTimeout(dicaTimeout);
+        dicaTimeout = setTimeout(() => {
+          dicaBtn.textContent = 'Pedir Dica';
+          dicaBtn.disabled = false;
+        }, 2000);
+      };
+    }
+    // Timer animado nos últimos 10s
+    function animateTimerDanger() {
+      const timerEl = document.getElementById('timer');
+      timerEl.classList.add('danger');
+      timerEl.style.animation = 'shake 0.5s infinite alternate';
+    }
+    function removeTimerDanger() {
+      const timerEl = document.getElementById('timer');
+      timerEl.classList.remove('danger');
+      timerEl.style.animation = '';
+    }
   </script>
+  <style>
+    @media (max-width: 600px) {
+      #game-card, #scoreboard, #turn-indicator, #timer, #dica-btn { max-width: 98vw; font-size: 1em; }
+      #game-card { padding: 10px; }
+      #scoreboard p { font-size: 1em; }
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(6px); }
+    }
+    .feedback-fullscreen { font-size:2.2em; background:rgba(0,200,100,0.13); color:#1b5e20; }
+    .feedback-fullscreen.error { background:rgba(220,0,0,0.13); color:#b71c1c; }
+  </style>
 </body>
 </html> 

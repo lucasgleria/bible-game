@@ -1,0 +1,35 @@
+[
+  {
+    "category": "Pessoa",
+    "answer": "Moisés",
+    "hints": [
+      "Fui colocado num cesto no rio quando bebê.",
+      "Fui chamado por Deus numa sarça ardente.",
+      "Lidereio o povo na travessia do Mar Vermelho.",
+      "Recebi as tábuas da Lei.",
+      "Meu nome começa com M."
+    ]
+  },
+  {
+    "category": "Lugar",
+    "answer": "Jerusalém",
+    "hints": [
+      "Cidade onde o templo foi construído.",
+      "Local do ministério e morte de Jesus.",
+      "Cidade santa para judeus e cristãos.",
+      "Davi foi o rei aqui.",
+      "Meu nome começa com J."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Dilúvio",
+    "hints": [
+      "Teve duração de 40 dias e 40 noites.",
+      "Foi anunciado por Deus a Noé.",
+      "Uma arca foi construída.",
+      "Todos os seres vivos foram salvos em pares.",
+      "Meu nome começa com D."
+    ]
+  }
+] 
