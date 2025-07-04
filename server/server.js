@@ -108,7 +108,7 @@ const cartas = [
 io.on('connection', (socket) => {
   console.log('Novo cliente conectado:', socket.id);
 
-  // Criação de sala
+  // --- CRIAÇÃO DE SALA ---
   socket.on('criarSala', ({ nomeGrupo, groupUUID }, callback) => {
     let codigo;
     do {
@@ -120,7 +120,7 @@ io.on('connection', (socket) => {
       rodada: 0,
       jogo: null
     };
-    // Remove qualquer grupo antigo com o mesmo groupUUID
+    // Remove apenas o grupo antigo com o mesmo groupUUID
     if (groupUUID) {
       salas[codigo].grupos = salas[codigo].grupos.filter(g => g.groupUUID !== groupUUID);
     }
@@ -132,15 +132,36 @@ io.on('connection', (socket) => {
     console.log(`[LOG] Estado da sala ${codigo} após criação:`, JSON.stringify(salas[codigo]));
   });
 
-  // Entrada em sala
+  // --- ENTRADA EM SALA ---
   socket.on('entrarSala', ({ codigo, nomeGrupo, groupUUID }, callback) => {
     const sala = salas[codigo];
     if (!sala) return callback({ sucesso: false, mensagem: 'Sala não encontrada.' });
-    if (sala.grupos.length >= 2) return callback({ sucesso: false, mensagem: 'Sala cheia.' });
-    // Remove qualquer grupo antigo com o mesmo groupUUID
+    // Se já existe um grupo com o mesmo groupUUID, atualize o id e nome, não adicione novo grupo
+    let grupoExistente = null;
     if (groupUUID) {
+      grupoExistente = sala.grupos.find(g => g.groupUUID === groupUUID);
+      if (grupoExistente) {
+        grupoExistente.id = socket.id;
+        grupoExistente.nome = nomeGrupo;
+        grupoExistente.pronto = false; // Ao reconectar, volta a não estar pronto
+        socket.join(codigo);
+        socket.sala = codigo;
+        // Cancelar timeout de remoção se alguém reconectar
+        if (salaTimeouts[codigo]) {
+          clearTimeout(salaTimeouts[codigo]);
+          delete salaTimeouts[codigo];
+          console.log(`Timeout de remoção da sala ${codigo} cancelado por reconexão.`);
+        }
+        console.log(`[LOG] ${nomeGrupo} reconectou na sala ${codigo} (socket: ${socket.id})`);
+        callback({ sucesso: true, codigo });
+        io.to(codigo).emit('atualizarSala', { grupos: sala.grupos });
+        console.log(`[LOG] Estado da sala ${codigo} após reconexão:`, JSON.stringify(salas[codigo]));
+        return;
+      }
+      // Se não existe, remove qualquer grupo antigo com o mesmo groupUUID (garantia extra)
       sala.grupos = sala.grupos.filter(g => g.groupUUID !== groupUUID);
     }
+    if (sala.grupos.length >= 2) return callback({ sucesso: false, mensagem: 'Sala cheia.' });
     sala.grupos.push({ id: socket.id, nome: nomeGrupo, pronto: false, groupUUID });
     socket.join(codigo);
     socket.sala = codigo;
@@ -259,7 +280,7 @@ io.on('connection', (socket) => {
   function enviarEstadoJogo(codigo) {
     const sala = salas[codigo];
     if (!sala) return;
-    io.to(codigo).emit('atualizarJogo', {
+    const estado = {
       rodada: sala.rodada,
       maxRodadas: sala.maxRodadas,
       turno: sala.turno,
@@ -270,7 +291,9 @@ io.on('connection', (socket) => {
       pontuacao: sala.pontuacao,
       acertos: sala.acertos,
       grupos: sala.grupos.map(g => g.nome)
-    });
+    };
+    console.log('[DEBUG BACKEND] Estado enviado para os clientes:', JSON.stringify(estado));
+    io.to(codigo).emit('atualizarJogo', estado);
   }
 
   // Evento para fornecer o estado atual da sala para um socket
@@ -291,11 +314,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Desconexão
+  // --- DESCONEXÃO ---
   socket.on('disconnect', () => {
     const codigo = socket.sala;
     if (!codigo || !salas[codigo]) return;
     const sala = salas[codigo];
+    // Remove apenas o grupo do socket desconectado
     sala.grupos = sala.grupos.filter(g => g.id !== socket.id);
     if (sala.grupos.length === 0) {
       // Inicia timeout para remoção da sala

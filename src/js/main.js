@@ -85,22 +85,55 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // Função para renderizar o estado do jogo multiplayer
 function renderMultiplayerState(estado) {
-  document.getElementById('team1-label').innerHTML = `${estado.grupos[0]}: <span id='score1'>${estado.pontuacao[0]}</span>`;
-  document.getElementById('score2').textContent = estado.pontuacao[1];
-  document.getElementById('category').textContent = `Categoria: ${estado.carta.categoria}`;
-  let ul = document.getElementById('hints');
-  ul.innerHTML = '';
-  estado.carta.dicas.forEach((hint, i) => {
+  // Guard clause: não renderizar se não houver grupos
+  if (!estado.grupos || estado.grupos.length === 0) {
+    console.warn('[DEBUG] Estado do jogo sem grupos, aguardando atualização...');
+    return;
+  }
+  // Aguarda DOM pronto
+  const answerArea = document.getElementById('answer-area');
+  const team1Label = document.getElementById('team1-label');
+  const score2 = document.getElementById('score2');
+  const category = document.getElementById('category');
+  const hints = document.getElementById('hints');
+  const hintsArea = document.getElementById('hints-area');
+  if (!answerArea || !team1Label || !score2 || !category || !hints || !hintsArea) {
+    setTimeout(() => renderMultiplayerState(estado), 50);
+    return;
+  }
+  const teamName = localStorage.getItem('teamName');
+  // LOGS DE DEPURAÇÃO
+  console.log('[DEBUG] Nome do grupo local:', teamName);
+  console.log('[DEBUG] Grupos recebidos do backend:', estado.grupos);
+  const grupoIndex = estado.grupos.findIndex(n => n === teamName);
+  console.log('[DEBUG] Índice do grupo local:', grupoIndex, '| Turno atual:', estado.turno);
+  // Corrigir nomes dos grupos no placar
+  team1Label.innerHTML = `${estado.grupos[0] || 'Grupo 1'}: <span id='score1'>${estado.pontuacao[0]}</span>`;
+  score2.textContent = estado.pontuacao[1];
+  if (estado.grupos[1]) {
+    document.getElementById('scoreboard').children[1].textContent = `${estado.grupos[1]}: ${estado.pontuacao[1]}`;
+  }
+  category.textContent = `Categoria: ${estado.carta.categoria}`;
+  // Renderizar dicas SEMPRE
+  hints.innerHTML = '';
+  let dicasParaExibir = estado.carta.dicas;
+  if ((!dicasParaExibir || dicasParaExibir.length === 0) && estado.carta && estado.carta.dicasOriginais && estado.carta.dicasOriginais.length > 0) {
+    dicasParaExibir = [estado.carta.dicasOriginais[0]];
+  }
+  dicasParaExibir.forEach((hint, i) => {
     let li = document.createElement('li');
     li.textContent = `${i + 1}. ${hint}`;
-    ul.appendChild(li);
+    hints.appendChild(li);
   });
-  const teamName = localStorage.getItem('teamName');
-  const grupoIndex = estado.grupos.findIndex(n => n === teamName);
+  // Exibir input de resposta apenas para o grupo da vez
   if (estado.turno === grupoIndex) {
-    document.getElementById('answer-area').style.display = '';
+    answerArea.style.display = 'block';
+    const guessInput = answerArea.querySelector('#guess');
+    const answerBtn = answerArea.querySelector('button');
+    if (guessInput) guessInput.disabled = false;
+    if (answerBtn) answerBtn.disabled = false;
   } else {
-    document.getElementById('answer-area').style.display = 'none';
+    answerArea.style.display = 'none';
   }
   document.getElementById('result').textContent = '';
   highlightGroupTurn();

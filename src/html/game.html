@@ -12,12 +12,17 @@
     <h1>Perfil Bíblico</h1>
     <div class="card" id="game-card">
       <p id="category"></p>
-      <ul id="hints"></ul>
-      <div id="answer-area">
-        <input type="text" id="guess" placeholder="Digite sua resposta" autocomplete="off" />
-        <button onclick="checkAnswer()">Responder</button>
+      <div id="hints-area" class="hints-area" style="background:#fffbe6;border:2px solid #ffe066;border-radius:12px;padding:16px 10px 10px 10px;margin-bottom:18px;">
+        <ul id="hints" style="margin:0;padding:0;"></ul>
       </div>
       <div id="result"></div>
+    </div>
+    <!-- Input de resposta separado do card de dicas -->
+    <div id="answer-area" class="answer-area" style="background:#f8f8fa;border-radius:10px;padding:18px 10px 10px 10px;max-width:340px;margin:18px auto 10px auto;display:block;">
+      <div style="display:flex;gap:8px;align-items:center;justify-content:center;">
+        <input type="text" id="guess" placeholder="Digite sua resposta" autocomplete="off" style="flex:1;max-width:220px;padding:12px;border-radius:10px;border:1.5px solid var(--primary);font-size:1.1em;outline:none;" />
+        <button onclick="checkAnswer()" style="padding:12px 18px;">Responder</button>
+      </div>
     </div>
     <div id="scoreboard">
       <p id="team1-label">Grupo 1: <span id="score1">0</span></p>
@@ -34,10 +39,6 @@
   <script src="../js/socket.js"></script>
   <script type="module" src="../js/main.js"></script>
   <script>
-    // Atualizar nome do time no placar
-    const teamName = localStorage.getItem('teamName') || 'Grupo 1';
-    const roomCode = localStorage.getItem('roomCode') || '';
-    document.getElementById('team1-label').innerHTML = `${teamName}: <span id='score1'>0</span>`;
     // Integração multiplayer: aguardar estado do jogo da sala
     window.salaSocket.onIniciarJogo((data) => {
       // Aqui pode-se inicializar o estado do jogo recebido do backend
