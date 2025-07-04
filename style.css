@@ -1,0 +1,14 @@
+
+body {
+  font-family: sans-serif;
+  background: #f7f7f7;
+  text-align: center;
+  padding: 20px;
+}
+#game, #controls, #scoreboard {
+  margin: 20px auto;
+}
+#timer {
+  font-size: 2em;
+  font-weight: bold;
+}

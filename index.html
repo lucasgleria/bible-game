@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfil Bíblico</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <h1>Perfil Bíblico</h1>
+    <div id="game">
+      <p id="category"></p>
+      <ul id="hints"></ul>
+      <input type="text" id="guess" placeholder="Digite sua resposta" />
+      <button onclick="checkAnswer()">Responder</button>
+      <p id="result"></p>
+    </div>
+    <div id="scoreboard">
+      <p>Grupo 1: <span id="score1">0</span> | Grupo 2: <span id="score2">0</span></p>
+    </div>
+    <div id="controls">
+      <label for="rounds">Rodadas:</label>
+      <select id="rounds">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="all">Todas</option>
+      </select>
+      <button onclick="startGame()">Começar</button>
+    </div>
+    <div id="timer">60</div>
+  </div>
+  <audio id="heartbeat" src="heartbeat.mp3"></audio>
+  <audio id="buzzer" src="buzzer.mp3"></audio>
+  <script src="script.js"></script>
+</body>
+</html>
