@@ -5,22 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Perfil Bíblico</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="src/css/style.css" />
+  <!-- Fonte moderna para melhor visual -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="app">
     <h1>Perfil Bíblico</h1>
-    <div id="game">
-      <p id="category"></p>
-      <ul id="hints"></ul>
-      <input type="text" id="guess" placeholder="Digite sua resposta" />
-      <button onclick="checkAnswer()">Responder</button>
-      <p id="result"></p>
-    </div>
-    <div id="scoreboard">
-      <p>Grupo 1: <span id="score1">0</span> | Grupo 2: <span id="score2">0</span></p>
-    </div>
-    <div id="controls">
+    <button id="main-start-btn" style="margin: 32px auto 18px auto; display: block; font-size: 1.2em; padding: 16px 36px; border-radius: 12px; background: var(--primary); color: #fff; border: none; font-weight: 700; cursor: pointer;">Iniciar</button>
+    <div id="customization-container" style="display:none;"></div>
+    <div id="game-container" style="display:none;"></div>
+    <div id="scoreboard-container" style="display:none;"></div>
+    <div id="controls" style="display:none;">
       <label for="rounds">Rodadas:</label>
       <select id="rounds">
         <option value="5">5</option>
@@ -30,10 +26,28 @@
       </select>
       <button onclick="startGame()">Começar</button>
     </div>
-    <div id="timer">60</div>
+    <div id="timer"></div>
+    <!-- Áreas para feedback animado -->
+    <div id="feedback-animation" style="display:none;"></div>
   </div>
   <audio id="heartbeat" src="heartbeat.mp3"></audio>
   <audio id="buzzer" src="buzzer.mp3"></audio>
-  <script src="script.js"></script>
+  <script src="src/js/script.js"></script>
+  <script>
+    // Carregar os parciais HTML
+    fetch('src/html/customization.html').then(r=>r.text()).then(html=>{
+      document.getElementById('customization-container').innerHTML = html;
+    });
+    fetch('src/html/game.html').then(r=>r.text()).then(html=>{
+      document.getElementById('game-container').innerHTML = html;
+    });
+    fetch('src/html/scoreboard.html').then(r=>r.text()).then(html=>{
+      document.getElementById('scoreboard-container').innerHTML = html;
+    });
+    // Lógica do botão Iniciar
+    document.getElementById('main-start-btn').onclick = function() {
+      window.location.href = 'src/html/customization.html';
+    };
+  </script>
 </body>
 </html>

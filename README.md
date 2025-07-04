@@ -2,22 +2,22 @@
 
 Um jogo de perguntas e respostas para grupos, baseado em personagens, lugares e acontecimentos da Bíblia. Ideal para dinâmicas em grupos de jovens, escolas dominicais ou encontros familiares.
 
-## Como Jogar
-
-1. **Escolha o número de rodadas** no menu suspenso.
-2. Clique em **Começar**.
-3. Leia as dicas exibidas e tente adivinhar a resposta correta.
-4. Digite sua resposta e clique em **Responder**.
-5. O placar é atualizado automaticamente. O jogo alterna entre dois grupos.
-6. O tempo para cada rodada é de 60 segundos, com feedback sonoro nos últimos 10 segundos e ao esgotar o tempo.
-7. Ao final das rodadas, o jogo exibe o resultado final.
-
 ## Estrutura do Projeto
 
-- `index.html`: Interface do usuário.
-- `style.css`: Estilos visuais.
-- `script.js`: Lógica do jogo (cartas, dicas, placar, temporizador).
+- `src/html/`: Contém os arquivos de interface (customization.html, game.html, scoreboard.html)
+- `src/css/`: Contém o arquivo de estilos (style.css)
+- `src/js/`: Contém o arquivo de lógica (script.js)
+- `index.html`: Arquivo principal que carrega os parciais HTML e referencia o CSS e JS corretos.
 - `heartbeat.mp3` e `buzzer.mp3`: Áudios de feedback (adicione estes arquivos na mesma pasta para funcionamento completo).
+
+## Como Jogar
+
+1. Abra o `index.html` em um navegador moderno.
+2. Siga as instruções na tela para personalizar e jogar.
+
+## Observação
+
+O `index.html` carrega os arquivos HTML parciais de `src/html/` e referencia o CSS e JS de `src/css/` e `src/js/` respectivamente. Certifique-se de manter a estrutura de pastas para o funcionamento correto.
 
 ## Requisitos
 

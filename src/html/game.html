@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfil Bíblico - Jogo</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <h1>Perfil Bíblico</h1>
+    <div class="card" id="game-card">
+      <p id="category"></p>
+      <ul id="hints"></ul>
+      <div id="answer-area">
+        <input type="text" id="guess" placeholder="Digite sua resposta" autocomplete="off" />
+        <button onclick="checkAnswer()">Responder</button>
+      </div>
+      <div id="result"></div>
+    </div>
+    <div id="scoreboard">
+      <p id="team1-label">Grupo 1: <span id="score1">0</span></p>
+      <p>Grupo 2: <span id="score2">0</span></p>
+    </div>
+    <div id="controls">
+      <label for="rounds">Rodadas:</label>
+      <select id="rounds">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="all">Todas</option>
+      </select>
+      <button onclick="startGame()">Começar</button>
+    </div>
+    <div id="timer"></div>
+    <div id="feedback-animation" style="display:none;"></div>
+  </div>
+  <audio id="heartbeat" src="../../heartbeat.mp3"></audio>
+  <audio id="buzzer" src="../../buzzer.mp3"></audio>
+  <script src="../js/script.js"></script>
+  <script>
+    // Atualizar nome do time no placar
+    const teamName = localStorage.getItem('teamName') || 'Grupo 1';
+    document.getElementById('team1-label').innerHTML = `${teamName}: <span id='score1'>0</span>`;
+  </script>
+</body>
+</html> 

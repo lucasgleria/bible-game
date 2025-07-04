@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfil Bíblico - Customização</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <h1>Perfil Bíblico</h1>
+    <div id="customization-screen" class="card">
+      <p style="font-size:1.2em;font-weight:600;margin-bottom:18px;">Qual o nome do seu time?</p>
+      <input type="text" id="team-name-input" placeholder="Digite o nome do time" maxlength="20" style="width:90%;max-width:260px;padding:12px;border-radius:10px;border:1.5px solid var(--primary);font-size:1.1em;margin-bottom:10px;outline:none;" />
+      <button id="start-custom-btn" style="width:100%;margin-top:10px;">Começar</button>
+      <div id="team-name-error" style="color:var(--danger);font-size:1em;margin-top:8px;min-height:22px;"></div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('start-custom-btn').onclick = function() {
+      const name = document.getElementById('team-name-input').value.trim();
+      const errorDiv = document.getElementById('team-name-error');
+      if (name.length < 2) {
+        errorDiv.textContent = 'Digite um nome válido (mínimo 2 letras)';
+        return;
+      }
+      localStorage.setItem('teamName', name);
+      window.location.href = 'game.html';
+    };
+    document.getElementById('team-name-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('start-custom-btn').onclick();
+    });
+  </script>
+</body>
+</html> 
