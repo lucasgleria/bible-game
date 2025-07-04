@@ -196,24 +196,36 @@ io.on('connection', (socket) => {
     const grupo = sala.grupos.find(g => g.id === socket.id);
     if (grupo) grupo.pronto = true;
     io.to(codigo).emit('atualizarSala', { grupos: sala.grupos });
-    console.log(`[LOG] Grupo ${grupo ? grupo.nome : 'desconhecido'} marcou pronto na sala ${codigo}`);
-    console.log(`[LOG] Estado da sala ${codigo} após pronto:`, JSON.stringify(salas[codigo]));
-    // Se ambos prontos, iniciar jogo
-    if (sala.grupos.length === 2 && sala.grupos.every(g => g.pronto)) {
+  
+    const todosProntos = sala.grupos.length === 2 && sala.grupos.every(g => g.pronto);
+    if (todosProntos) {
       sala.estado = 'jogo';
       sala.rodada = 1;
-      sala.turno = 0; // 0: grupo 1, 1: grupo 2
+      sala.turno = 0;
       sala.pontuacao = [0, 0];
       sala.acertos = [0, 0];
-      // Usar maxRodadas da configuração, se existir
       sala.maxRodadas = (sala.configuracoes && sala.configuracoes.maxRodadas) ? sala.configuracoes.maxRodadas : 5;
       sala.cartasRestantes = [...cartas];
       shuffle(sala.cartasRestantes);
       sala.cartaAtual = sala.cartasRestantes.pop();
       sala.dicaAtual = 1;
       sala.respondeu = false;
-      console.log(`[LOG] Ambos prontos na sala ${codigo}. Iniciando jogo.`);
-      io.to(codigo).emit('iniciarJogo', { mensagem: 'O jogo vai começar!' });
+  
+      const estadoInicial = {
+        rodada: sala.rodada,
+        maxRodadas: sala.maxRodadas,
+        turno: sala.turno,
+        carta: {
+          categoria: sala.cartaAtual.categoria,
+          dicas: sala.cartaAtual.dicas.slice(0, sala.dicaAtual)
+        },
+        pontuacao: sala.pontuacao,
+        acertos: sala.acertos,
+        grupos: sala.grupos
+      };
+  
+      io.to(codigo).emit('iniciarJogo', estadoInicial);
+  
       setTimeout(() => {
         enviarEstadoJogo(codigo);
       }, 1000);
@@ -290,7 +302,7 @@ io.on('connection', (socket) => {
       },
       pontuacao: sala.pontuacao,
       acertos: sala.acertos,
-      grupos: sala.grupos.map(g => g.nome)
+      grupos: sala.grupos // Mude esta linha para enviar o array de objetos de grupo completo
     };
     console.log('[DEBUG BACKEND] Estado enviado para os clientes:', JSON.stringify(estado));
     io.to(codigo).emit('atualizarJogo', estado);
@@ -310,7 +322,7 @@ io.on('connection', (socket) => {
       },
       pontuacao: sala.pontuacao,
       acertos: sala.acertos,
-      grupos: sala.grupos.map(g => g.nome)
+      grupos: sala.grupos
     });
   });
 

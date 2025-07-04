@@ -17,7 +17,6 @@
       </div>
       <div id="result"></div>
     </div>
-    <!-- Input de resposta separado do card de dicas -->
     <div id="answer-area" class="answer-area" style="background:#f8f8fa;border-radius:10px;padding:18px 10px 10px 10px;max-width:340px;margin:18px auto 10px auto;display:block;">
       <div style="display:flex;gap:8px;align-items:center;justify-content:center;">
         <input type="text" id="guess" placeholder="Digite sua resposta" autocomplete="off" style="flex:1;max-width:220px;padding:12px;border-radius:10px;border:1.5px solid var(--primary);font-size:1.1em;outline:none;" />
@@ -37,28 +36,60 @@
   <audio id="buzzer" src="../../buzzer.mp3"></audio>
   <script src="/socket.io/socket.io.js"></script>
   <script src="../js/socket.js"></script>
-  <script type="module" src="../js/main.js"></script>
   <script>
-    // Integração multiplayer: aguardar estado do jogo da sala
-    window.salaSocket.onIniciarJogo((data) => {
-      // Aqui pode-se inicializar o estado do jogo recebido do backend
-      // Exemplo: atualizar placar, rodada, etc.
-    });
-    // Futuro: receber atualizações de rodada, placar, etc.
-    // Controle do botão de dica extra
+    // Reconexão automática ao carregar a página game.html
+    const teamName = localStorage.getItem('teamName');
+    const roomCode = localStorage.getItem('roomCode');
+    const groupUUID = localStorage.getItem('groupUUID'); // Certifique-se de pegar o groupUUID
+    if (teamName && roomCode && groupUUID && window.salaSocket) {
+      window.salaSocket.entrarSala(roomCode, teamName, (res) => {
+        if (!res.sucesso) {
+          alert('Erro ao reconectar à sala de jogo: ' + (res.mensagem || 'Desconhecido') + '. Redirecionando para tela inicial.');
+          window.location.href = '../index.html'; // Redireciona se não conseguir reconectar
+        } else {
+          console.log('[GAME] Reconectado à sala de jogo com sucesso.');
+          // Após reconectar, pedir o estado atual do jogo
+          window.salaSocket.pedirEstadoSala(roomCode, (estado) => {
+            if (estado) {
+              console.log('[GAME] Estado inicial recebido ao reconectar:', estado);
+              // Chame a função de renderização do main.js
+              if (typeof renderMultiplayerState === 'function') {
+                renderMultiplayerState(estado);
+              }
+            } else {
+              console.warn('[GAME] Não foi possível obter o estado inicial da sala. Sala pode não estar no estado de jogo ou expirou.');
+              // Opcional: Redirecionar ou mostrar mensagem se não conseguir estado
+              // alert('A sala de jogo pode ter expirado. Criando nova sala ou entrando em outra.');
+              // window.location.href = '../index.html';
+            }
+          });
+        }
+      }, groupUUID); // Passe o groupUUID para entrarSala
+    } else if (!teamName || !roomCode || !groupUUID) {
+      // Se faltar alguma info, redireciona para a tela inicial
+      alert('Informações da sala ou grupo não encontradas. Por favor, crie ou entre em uma sala.');
+      window.location.href = '../index.html';
+    }
+
+    // Lógica existente do botão de dica e timer...
     const dicaBtn = document.getElementById('dica-btn');
     let dicasDisponiveis = 0;
     let dicaTimeout = null;
     if (window.salaSocket) {
+      // Remova o onIniciarJogo vazio daqui, ele será tratado no main.js
       window.salaSocket.onAtualizarJogo((estado) => {
         dicasDisponiveis = estado.carta.dicas.length;
         const teamName = localStorage.getItem('teamName');
-        const grupoIndex = estado.grupos.findIndex(n => n === teamName);
-        dicaBtn.style.display = (estado.turno === grupoIndex && dicasDisponiveis < 5) ? 'block' : 'none';
+        // Achar o grupo pelo groupUUID ou socket.id, não apenas teamName
+        // Para simplicidade, vou manter teamName aqui, mas o ideal seria pelo groupUUID no backend
+        const meuGrupo = estado.grupos.find(g => g.nome === teamName); // Supondo que 'grupos' no estado agora seja objetos completos
+        const meuGrupoIndex = meuGrupo ? estado.grupos.indexOf(meuGrupo) : -1;
+
+        dicaBtn.style.display = (estado.turno === meuGrupoIndex && dicasDisponiveis < 5) ? 'block' : 'none';
         dicaBtn.disabled = false;
         dicaBtn.title = dicaBtn.style.display === 'block' ? 'Peça uma dica extra se estiver com dificuldade!' : 'Aguarde sua vez ou todas as dicas já foram exibidas.';
         // Indicar grupo da vez
-        document.getElementById('turn-indicator').textContent = `Vez de: ${estado.grupos[estado.turno]}`;
+        document.getElementById('turn-indicator').textContent = `Vez de: ${estado.grupos[estado.turno].nome}`; // Mostra o nome do grupo
       });
       dicaBtn.onclick = function() {
         dicaBtn.disabled = true;
@@ -83,6 +114,7 @@
       timerEl.style.animation = '';
     }
   </script>
+  <script type="module" src="../js/main.js"></script>
   <style>
     @media (max-width: 600px) {
       #game-card, #scoreboard, #turn-indicator, #timer, #dica-btn { max-width: 98vw; font-size: 1em; }
@@ -97,4 +129,4 @@
     .feedback-fullscreen.error { background:rgba(220,0,0,0.13); color:#b71c1c; }
   </style>
 </body>
-</html> 
+</html>
