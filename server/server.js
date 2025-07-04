@@ -9,8 +9,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const PORT = 4000;
+const PORT = 4001;
 const LEADERBOARD_PATH = path.join(__dirname, 'leaderboard.json');
+
+// Middleware CORS para permitir requisições do frontend
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
 
 // Middleware para JSON
 app.use(express.json());
@@ -18,14 +26,28 @@ app.use(express.json());
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, '..')));
 
+// Servir arquivos estáticos do frontend
+app.use(express.static(path.join(__dirname, '..')));
+
 // Rotas para leaderboard
 app.get('/leaderboard', (req, res) => {
+  console.log('[LEADERBOARD] Requisição GET /leaderboard recebida');
   fs.readFile(LEADERBOARD_PATH, 'utf8', (err, data) => {
-    if (err) return res.status(500).json({ error: 'Erro ao ler leaderboard.' });
+    if (err) {
+      console.error('[LEADERBOARD] Erro ao ler arquivo:', err);
+      return res.status(500).json({ error: 'Erro ao ler leaderboard.' });
+    }
     let arr = [];
-    try { arr = JSON.parse(data); } catch (e) {}
+    try { 
+      arr = JSON.parse(data); 
+      console.log('[LEADERBOARD] Dados carregados:', arr.length, 'registros');
+    } catch (e) {
+      console.error('[LEADERBOARD] Erro ao parsear JSON:', e);
+    }
     arr.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos);
-    res.json(arr.slice(0, 10));
+    const top10 = arr.slice(0, 10);
+    console.log('[LEADERBOARD] Enviando top 10:', top10.length, 'registros');
+    res.json(top10);
   });
 });
 
@@ -50,6 +72,7 @@ app.post('/leaderboard', (req, res) => {
 // Estrutura para armazenar salas e seus estados
 const salas = {};
 const salaTimeouts = {};
+const gameTimers = {}; // Timers de jogo por sala
 
 function gerarCodigoSala() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -125,6 +148,155 @@ function salvarResultadoLeaderboard(grupo, pontos, acertos) {
       }
     });
   });
+}
+
+// Funções para gerenciar timer do jogo
+function enviarEstadoJogo(codigo) {
+  const sala = salas[codigo];
+  if (!sala) return;
+  const estado = {
+    rodada: sala.rodada,
+    maxRodadas: sala.maxRodadas,
+    turno: sala.turno,
+    carta: {
+      categoria: sala.cartaAtual.categoria,
+      dicas: sala.cartaAtual.dicas.slice(0, sala.dicaAtual)
+    },
+    pontuacao: sala.pontuacao,
+    acertos: sala.acertos,
+    grupos: sala.grupos,
+    timer: {
+      tempo: sala.tempoRestante || 60,
+      maxTempo: 60,
+      ativo: sala.timerAtivo || false
+    }
+  };
+  console.log('[DEBUG BACKEND] Estado enviado para os clientes:', JSON.stringify(estado));
+  io.to(codigo).emit('atualizarJogo', estado);
+}
+
+function proximaRodada(codigo) {
+  const sala = salas[codigo];
+  if (!sala) return;
+  sala.rodada++;
+  sala.turno = 1 - sala.turno;
+  sala.dicaAtual = 1;
+  sala.respondeu = false;
+  
+  // Parar timer anterior
+  pararTimerJogo(codigo);
+  
+  if (sala.rodada > sala.maxRodadas || sala.cartasRestantes.length === 0) {
+    sala.estado = 'fim';
+    pararTimerJogo(codigo); // Garantir que o timer seja parado
+    
+    // Determinar o vencedor
+    const pontuacao1 = sala.pontuacao[0];
+    const pontuacao2 = sala.pontuacao[1];
+    const vencedor = pontuacao1 > pontuacao2 ? 0 : pontuacao1 < pontuacao2 ? 1 : -1; // -1 = empate
+    
+    // Enviar som de vitória apenas para o vencedor (se houver)
+    if (vencedor !== -1) {
+      const vencedorSocket = sala.grupos[vencedor].id;
+      const perdedorSocket = sala.grupos[1 - vencedor].id;
+      
+      // Som de vitória para o vencedor
+      io.to(vencedorSocket).emit('audioEvent', { tipo: 'victory', acao: 'play' });
+      console.log(`[VICTORY] Som de vitória enviado para ${sala.grupos[vencedor].nome}`);
+      
+      // Som de derrota para o perdedor
+      io.to(perdedorSocket).emit('audioEvent', { tipo: 'lost', acao: 'play' });
+      console.log(`[LOST] Som de derrota enviado para ${sala.grupos[1 - vencedor].nome}`);
+    }
+    
+    io.to(codigo).emit('fimJogo', {
+      pontuacao: sala.pontuacao,
+      acertos: sala.acertos,
+      grupos: sala.grupos.map(g => g.nome),
+      vencedor: vencedor // -1 = empate, 0 = grupo 1, 1 = grupo 2
+    });
+    
+    // Salvar resultado dos dois grupos
+    salvarResultadoLeaderboard(sala.grupos[0].nome, sala.pontuacao[0], sala.acertos[0]);
+    salvarResultadoLeaderboard(sala.grupos[1].nome, sala.pontuacao[1], sala.acertos[1]);
+    return;
+  }
+  
+  sala.cartaAtual = sala.cartasRestantes.pop();
+  enviarEstadoJogo(codigo);
+  
+  // Iniciar timer para nova rodada
+  setTimeout(() => {
+    iniciarTimerJogo(codigo);
+  }, 1000);
+}
+
+function iniciarTimerJogo(codigo) {
+  const sala = salas[codigo];
+  if (!sala || sala.estado !== 'jogo') return;
+  
+  // Limpar timer anterior se existir
+  if (gameTimers[codigo]) {
+    clearInterval(gameTimers[codigo]);
+  }
+  
+  sala.tempoRestante = 60;
+  sala.timerAtivo = true;
+  
+  // Enviar tempo inicial
+  io.to(codigo).emit('atualizarTimer', { tempo: sala.tempoRestante, maxTempo: 60 });
+  
+  gameTimers[codigo] = setInterval(() => {
+    if (!sala || sala.estado !== 'jogo' || !sala.timerAtivo) {
+      clearInterval(gameTimers[codigo]);
+      delete gameTimers[codigo];
+      return;
+    }
+    
+    sala.tempoRestante--;
+    
+    // Enviar atualização do timer para todos os clientes
+    io.to(codigo).emit('atualizarTimer', { tempo: sala.tempoRestante, maxTempo: 60 });
+    
+    // Evento de áudio: heartbeat nos últimos 11 segundos
+    if (sala.tempoRestante === 11) {
+      io.to(codigo).emit('audioEvent', { tipo: 'heartbeat', acao: 'play' });
+    }
+    
+    // Verificar se o tempo acabou
+    if (sala.tempoRestante <= 0) {
+      clearInterval(gameTimers[codigo]);
+      delete gameTimers[codigo];
+      sala.timerAtivo = false;
+      
+      // Evento de áudio: buzzer quando tempo esgota
+      io.to(codigo).emit('audioEvent', { tipo: 'buzzer', acao: 'play' });
+      
+      // Tempo esgotado - passar para próxima rodada
+      io.to(codigo).emit('tempoEsgotado', { 
+        resposta: sala.cartaAtual.resposta,
+        turnoAnterior: sala.turno,
+        proximoTurno: 1 - sala.turno
+      });
+      
+      // Aguardar 2 segundos para mostrar feedback, depois passar para próxima rodada
+      setTimeout(() => {
+        proximaRodada(codigo);
+      }, 2000);
+    }
+  }, 1000);
+}
+
+function pararTimerJogo(codigo) {
+  const sala = salas[codigo];
+  if (sala) {
+    sala.timerAtivo = false;
+  }
+  
+  if (gameTimers[codigo]) {
+    clearInterval(gameTimers[codigo]);
+    delete gameTimers[codigo];
+  }
 }
 
 io.on('connection', (socket) => {
@@ -250,6 +422,10 @@ io.on('connection', (socket) => {
   
       setTimeout(() => {
         enviarEstadoJogo(codigo);
+        // Iniciar timer para primeira rodada
+        setTimeout(() => {
+          iniciarTimerJogo(codigo);
+        }, 1000);
       }, 1000);
     }
   });
@@ -278,8 +454,18 @@ io.on('connection', (socket) => {
       sala.pontuacao[turno] += pontos;
       sala.acertos[turno] += 1;
       sala.respondeu = true;
+      
+      // Parar timer quando acertar
+      pararTimerJogo(codigo);
+      
+      // Evento de áudio: sucesso
+      io.to(codigo).emit('audioEvent', { tipo: 'success', acao: 'play' });
+      
       io.to(codigo).emit('feedback', { tipo: 'acerto', pontos });
     } else {
+      // Evento de áudio: erro
+      io.to(socket.id).emit('audioEvent', { tipo: 'buzzer', acao: 'play' });
+      
       io.to(socket.id).emit('feedback', { tipo: 'erro' });
       return;
     }
@@ -288,47 +474,9 @@ io.on('connection', (socket) => {
     }, 1200);
   });
 
-  function proximaRodada(codigo) {
-    const sala = salas[codigo];
-    if (!sala) return;
-    sala.rodada++;
-    sala.turno = 1 - sala.turno;
-    sala.dicaAtual = 1;
-    sala.respondeu = false;
-    if (sala.rodada > sala.maxRodadas || sala.cartasRestantes.length === 0) {
-      sala.estado = 'fim';
-      io.to(codigo).emit('fimJogo', {
-        pontuacao: sala.pontuacao,
-        acertos: sala.acertos,
-        grupos: sala.grupos.map(g => g.nome)
-      });
-      // Salvar resultado dos dois grupos
-      salvarResultadoLeaderboard(sala.grupos[0].nome, sala.pontuacao[0], sala.acertos[0]);
-      salvarResultadoLeaderboard(sala.grupos[1].nome, sala.pontuacao[1], sala.acertos[1]);
-      return;
-    }
-    sala.cartaAtual = sala.cartasRestantes.pop();
-    enviarEstadoJogo(codigo);
-  }
 
-  function enviarEstadoJogo(codigo) {
-    const sala = salas[codigo];
-    if (!sala) return;
-    const estado = {
-      rodada: sala.rodada,
-      maxRodadas: sala.maxRodadas,
-      turno: sala.turno,
-      carta: {
-        categoria: sala.cartaAtual.categoria,
-        dicas: sala.cartaAtual.dicas.slice(0, sala.dicaAtual)
-      },
-      pontuacao: sala.pontuacao,
-      acertos: sala.acertos,
-      grupos: sala.grupos // Mude esta linha para enviar o array de objetos de grupo completo
-    };
-    console.log('[DEBUG BACKEND] Estado enviado para os clientes:', JSON.stringify(estado));
-    io.to(codigo).emit('atualizarJogo', estado);
-  }
+
+
 
   // Evento para fornecer o estado atual da sala para um socket
   socket.on('pedirEstadoSala', (codigo, callback) => {
@@ -361,6 +509,7 @@ io.on('connection', (socket) => {
       salaTimeouts[codigo] = setTimeout(() => {
         delete salas[codigo];
         delete salaTimeouts[codigo];
+        delete gameTimers[codigo]; // Limpar timer da sala
         console.log(`Sala ${codigo} removida (timeout atingido).`);
       }, 2 * 60 * 1000); // 2 minutos
       console.log(`Sala ${codigo} ficará reservada por 2 minutos para reconexão.`);

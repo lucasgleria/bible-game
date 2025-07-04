@@ -1,8 +1,14 @@
 // ui.js
 // Funções de manipulação de interface
+import { playSuccess, playBuzzer } from './audio.js';
 
 export function renderTimer(time, maxTime) {
   const timerEl = document.getElementById("timer");
+  if (!timerEl) {
+    console.warn('[TIMER] Elemento timer não encontrado');
+    return;
+  }
+  
   const percent = Math.max(0, time / maxTime);
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
@@ -48,9 +54,13 @@ export function showFeedback(type, message) {
   if (type === 'success') {
     feedback.className = 'feedback-fullscreen';
     feedback.textContent = 'Acerto';
+    // Tocar som de sucesso
+    playSuccess();
   } else if (type === 'error') {
     feedback.className = 'feedback-fullscreen error';
     feedback.textContent = 'Errado';
+    // Tocar som de erro
+    playBuzzer();
   }
   setTimeout(() => {
     feedback.style.display = 'none';

@@ -11,6 +11,35 @@ let groupTurn = 1;
 let score = {1: 0, 2: 0};
 
 export function startGame(cardsData) {
+  console.log('[GAMELOGIC] startGame chamada com cards:', cardsData);
+  
+  // Se estamos na página inicial, navegar para customização (fluxo multiplayer)
+  if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+    // Navegar para a página de customização (fluxo correto)
+    window.location.href = 'src/html/customization.html';
+    return;
+  }
+  
+  // Se estamos na página de teste, iniciar jogo local diretamente
+  if (window.location.pathname.includes('test-local-game.html')) {
+    cards = cardsData;
+    let sel = document.getElementById("rounds");
+    if (sel) {
+      let val = sel.value;
+      maxRounds = val === "all" ? cards.length : parseInt(val);
+    } else {
+      maxRounds = 5;
+    }
+    round = 0;
+    score = {1: 0, 2: 0};
+    groupTurn = 1;
+    document.getElementById("score1").textContent = 0;
+    document.getElementById("score2").textContent = 0;
+    nextRound();
+    return;
+  }
+  
+  // Se já estamos na página do jogo, iniciar o jogo
   cards = cardsData;
   let sel = document.getElementById("rounds");
   if (sel) {

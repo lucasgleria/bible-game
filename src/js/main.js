@@ -3,10 +3,16 @@
 
 import { loadCards } from './cards.js';
 import { startGame, checkAnswer, nextRound, highlightGroupTurn } from './gameLogic.js';
-import { showFeedback } from './ui.js';
+import { showFeedback, renderTimer } from './ui.js';
+import { playSuccess, playBuzzer, playHeartbeat, stopHeartbeat, toggleMute, setAudioVolume, playVictory, playLost } from './audio.js';
+
+// Variável global para armazenar estado atual
+let estadoAtual = null;
 
 // Tornar renderMultiplayerState global para ser acessível do game.html
 window.renderMultiplayerState = function(estado) {
+  // Atualizar estado global
+  estadoAtual = estado;
   console.log('[CLIENT RENDER] Estado recebido:', estado);
   // Guard clause: não renderizar se não houver grupos
   if (!estado.grupos || estado.grupos.length === 0) {
@@ -76,35 +82,127 @@ window.renderMultiplayerState = function(estado) {
     const answerBtn = answerArea.querySelector('button');
     if (guessInput) guessInput.disabled = false;
     if (answerBtn) answerBtn.disabled = false;
+    
+    // Mostrar botão de dica apenas para o grupo da vez
+    const dicaBtn = document.getElementById('dica-btn');
+    if (dicaBtn) {
+      dicaBtn.style.display = 'block';
+      dicaBtn.disabled = false;
+    }
   } else {
     answerArea.style.display = 'none';
+    
+    // Ocultar botão de dica para grupos que não estão na vez
+    const dicaBtn = document.getElementById('dica-btn');
+    if (dicaBtn) {
+      dicaBtn.style.display = 'none';
+    }
   }
   document.getElementById('result').textContent = '';
+  
+  // Renderizar timer se disponível
+  if (estado.timer && typeof renderTimer === 'function') {
+    renderTimer(estado.timer.tempo, estado.timer.maxTempo);
+  }
+  
+  // Atualizar indicador de turno
+  const turnIndicator = document.getElementById('turn-indicator');
+  if (turnIndicator && estado.grupos && estado.grupos[estado.turno]) {
+    turnIndicator.textContent = `Vez de: ${estado.grupos[estado.turno].nome}`;
+  }
+  
   highlightGroupTurn(); // Certifique-se de que highlightGroupTurn é importado e funciona com os IDs/classes corretas
 } // <--- ESTA É A CHAVE DE FECHAMENTO FINAL PARA window.renderMultiplayerState!
 
+// Função para carregar e exibir o leaderboard
+async function loadLeaderboard() {
+  try {
+    const response = await fetch('http://localhost:4001/leaderboard');
+    if (!response.ok) {
+      console.warn('[LEADERBOARD] Erro ao carregar leaderboard:', response.status);
+      return;
+    }
+    const leaderboard = await response.json();
+    
+    const container = document.getElementById('leaderboard-container');
+    if (!container) return;
+    
+    if (leaderboard.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">Nenhum resultado ainda. Seja o primeiro a jogar!</p>';
+      return;
+    }
+    
+    let html = '<div style="background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">';
+    html += '<h3 style="margin: 0 0 16px 0; color: var(--primary); text-align: center;">🏆 Top 10 Grupos</h3>';
+    
+    leaderboard.forEach((entry, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+      const date = new Date(entry.data).toLocaleDateString('pt-BR');
+      
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2em;">${medal}</span>
+            <span style="font-weight: 600; color: var(--primary);">${entry.grupo}</span>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 600; color: var(--accent);">${entry.pontos} pts</div>
+            <div style="font-size: 0.8em; color: #666;">${entry.acertos} acertos</div>
+            <div style="font-size: 0.7em; color: #999;">${date}</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+  } catch (error) {
+    console.error('[LEADERBOARD] Erro ao carregar leaderboard:', error);
+    const container = document.getElementById('leaderboard-container');
+    if (container) {
+      container.innerHTML = '<p style="text-align: center; color: #666;">Erro ao carregar leaderboard</p>';
+    }
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   try {
+    console.log('[MAIN] Iniciando carregamento...');
+    
+    // Carregar leaderboard na página inicial
+    if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+      await loadLeaderboard();
+    }
+    
     const cards = await loadCards();
-    const isMultiplayer = !!localStorage.getItem('roomCode');
-    const startBtn = document.querySelector('#controls button'); // Este botão não existe no game.html
-    const answerBtn = document.getElementById('answer-area').querySelector('button'); // Acessar diretamente pelo id do pai
+    console.log('[MAIN] Cards carregados:', cards);
+    
+    const isMultiplayer = !!localStorage.getItem('roomCode') && window.salaSocket;
+    const startBtn = document.querySelector('#main-start-btn');
+    const answerBtn = document.getElementById('answer-area')?.querySelector('button');
     const guessInput = document.getElementById('guess');
     const roomCode = localStorage.getItem('roomCode');
 
+    console.log('[MAIN] Modo multiplayer:', isMultiplayer);
+    console.log('[MAIN] Sala socket disponível:', !!window.salaSocket);
+    console.log('[MAIN] Botão iniciar encontrado:', !!startBtn);
+    console.log('[MAIN] URL atual:', window.location.href);
+
     if (isMultiplayer && window.salaSocket) {
+      console.log('[MAIN] Configurando modo multiplayer...');
+      
       // Nunca iniciar jogo localmente!
-      // Este `startBtn` é para o modo local. Removê-lo ou mover para um script condicional, se não for usado.
       if (startBtn) startBtn.style.display = 'none';
 
-      // Recebe início do jogo do backend (primeira vez que o jogo realmente começa)
-      window.salaSocket.onIniciarJogo((estadoInicialJogo) => { // Backend agora envia o estado aqui
+      // Recebe início do jogo do backend
+      window.salaSocket.onIniciarJogo((estadoInicialJogo) => {
         console.log('[MAIN] Evento iniciarJogo recebido. Renderizando estado inicial:', estadoInicialJogo);
         window.renderMultiplayerState(estadoInicialJogo);
       });
 
       // Atualiza interface do jogo conforme estado do backend
-      window.salaSocket.onAtualizarJogo(window.renderMultiplayerState); // Use a função global
+      window.salaSocket.onAtualizarJogo(window.renderMultiplayerState);
 
       // Botão de resposta envia para o backend
       if (answerBtn) {
@@ -123,6 +221,15 @@ window.addEventListener('DOMContentLoaded', async () => {
           }
         });
       }
+      
+      // Botão de dica envia para o backend
+      const dicaBtn = document.getElementById('dica-btn');
+      if (dicaBtn) {
+        dicaBtn.onclick = function() {
+          window.salaSocket.pedirDica();
+        };
+      }
+      
       // Feedback do backend
       window.salaSocket.onFeedback(({ tipo, pontos }) => {
         if (tipo === 'acerto') {
@@ -131,23 +238,92 @@ window.addEventListener('DOMContentLoaded', async () => {
           showFeedback('error', 'Errado');
         }
       });
+      
+      // Eventos de áudio do backend
+      window.salaSocket.onAudioEvent((data) => {
+        console.log('[AUDIO] Evento recebido:', data);
+      });
+      
+      // Controle de áudio
+      const audioToggle = document.getElementById('audio-toggle');
+      if (audioToggle) {
+        audioToggle.addEventListener('click', function() {
+          const isMuted = toggleMute();
+          this.textContent = isMuted ? '🔇' : '🔊';
+          this.title = isMuted ? 'Ativar Áudio' : 'Desativar Áudio';
+        });
+      }
+      
+      // Timer do jogo
+      window.salaSocket.onAtualizarTimer(({ tempo, maxTempo }) => {
+        if (typeof renderTimer === 'function') {
+          renderTimer(tempo, maxTempo);
+        }
+      });
+      
+      // Tempo esgotado
+      window.salaSocket.onTempoEsgotado(({ resposta, turnoAnterior, proximoTurno }) => {
+        const grupoAnterior = estadoAtual?.grupos?.[turnoAnterior]?.nome || `Grupo ${turnoAnterior + 1}`;
+        const proximoGrupo = estadoAtual?.grupos?.[proximoTurno]?.nome || `Grupo ${proximoTurno + 1}`;
+        
+        showFeedback('error', `⏰ Tempo esgotado! A resposta era: ${resposta}`);
+        
+        setTimeout(() => {
+          const turnIndicator = document.getElementById('turn-indicator');
+          if (turnIndicator) {
+            turnIndicator.innerHTML = `
+              <div style="background: var(--danger); color: white; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                <strong>⏰ TEMPO ESGOTADO!</strong><br>
+                <span style="font-size: 0.9em;">Vez de: <strong>${proximoGrupo}</strong></span>
+              </div>
+            `;
+            
+            setTimeout(() => {
+              turnIndicator.innerHTML = '';
+            }, 4000);
+          }
+        }, 1500);
+      });
+      
       // Fim de jogo
-      window.salaSocket.onFimJogo(({ pontuacao, acertos, grupos }) => {
-        // Salvar resultados no localStorage para a tela end.html
+      window.salaSocket.onFimJogo(({ pontuacao, acertos, grupos, vencedor }) => {
+        const teamName = localStorage.getItem('teamName');
+        const meuGrupo = grupos.find(g => g === teamName);
+        const meuIndex = grupos.indexOf(meuGrupo);
+        
+        if (vencedor !== -1 && vencedor === meuIndex) {
+          console.log('[VICTORY] Você venceu! Tocando som de vitória...');
+          playVictory();
+        }
+        
+        if (vencedor !== -1 && vencedor !== meuIndex) {
+          console.log('[LOST] Você perdeu! Tocando som de derrota...');
+          playLost();
+        }
+        
         const gameResults = {
           pontuacao: pontuacao,
           acertos: acertos,
-          grupos: grupos
+          grupos: grupos,
+          vencedor: vencedor
         };
         localStorage.setItem('gameResults', JSON.stringify(gameResults));
         
-        // Redirecionar para tela de fim de jogo
         window.location.href = 'end.html';
       });
+      
+      console.log('[MAIN] Modo multiplayer configurado com sucesso');
     } else {
+      console.log('[MAIN] Configurando modo local...');
+      
       // Modo local: fluxo antigo
+      console.log('[MAIN] Botão iniciar encontrado:', !!startBtn);
       if (startBtn) {
-        startBtn.onclick = () => startGame(cards);
+        console.log('[MAIN] Configurando onclick para startGame...');
+        startBtn.onclick = () => {
+          console.log('[MAIN] Botão iniciar clicado! Chamando startGame...');
+          startGame(cards);
+        };
       }
       if (answerBtn) {
         answerBtn.onclick = checkAnswer;
@@ -157,9 +333,12 @@ window.addEventListener('DOMContentLoaded', async () => {
           if (e.key === 'Enter') checkAnswer();
         });
       }
+      
+      console.log('[MAIN] Modo local configurado com sucesso');
     }
   } catch (e) {
-    alert('Erro ao carregar cartas do jogo ou inicializar main.js.');
-    console.error(e);
+    console.error('[MAIN] Erro detalhado:', e);
+    console.error('[MAIN] Stack trace:', e.stack);
+    alert('Erro ao carregar cartas do jogo ou inicializar main.js: ' + e.message);
   }
 });

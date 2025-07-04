@@ -28,47 +28,10 @@
       </select>
       <button onclick="startGame()">Começar</button>
     </div>
-    <div id="timer"></div>
     <!-- Áreas para feedback animado -->
     <div id="feedback-animation" style="display:none;"></div>
   </div>
-  <audio id="heartbeat" src="heartbeat.mp3"></audio>
-  <audio id="buzzer" src="buzzer.mp3"></audio>
+  <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="src/js/main.js"></script>
-  <script>
-    // Carregar leaderboard
-    function renderLeaderboard(data) {
-      const container = document.getElementById('leaderboard-container');
-      if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#888;font-size:1.1em;">Ainda não há partidas registradas.<br>Jogue a primeira partida para aparecer aqui!</p>';
-        return;
-      }
-      let html = '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:1.08em;">';
-      html += '<tr style="background:#f3f3f3;"><th style="padding:8px 4px;">#</th><th style="padding:8px 4px;">Grupo</th><th style="padding:8px 4px;">Pontos</th><th style="padding:8px 4px;">Acertos</th></tr>';
-      data.slice(0,10).forEach((item, i) => {
-        let bg = i % 2 === 0 ? '#fff' : '#f9f9f9';
-        let style = `background:${bg};`;
-        if (i === 0) style = 'background:linear-gradient(90deg,#ffe066,#fffbe6);font-weight:700;color:#b8860b;';
-        html += `<tr style='${style}'><td style='text-align:center;'>${i+1}</td><td style='font-weight:600;'>${item.grupo}</td><td style='text-align:center;'>${item.pontos}</td><td style='text-align:center;'>${item.acertos}</td></tr>`;
-      });
-      html += '</table>';
-      container.innerHTML = html;
-    }
-    fetch('/leaderboard').then(r=>r.json()).then(renderLeaderboard);
-    // Carregar os parciais HTML
-    fetch('src/html/customization.html').then(r=>r.text()).then(html=>{
-      document.getElementById('customization-container').innerHTML = html;
-    });
-    fetch('src/html/game.html').then(r=>r.text()).then(html=>{
-      document.getElementById('game-container').innerHTML = html;
-    });
-    fetch('src/html/scoreboard.html').then(r=>r.text()).then(html=>{
-      document.getElementById('scoreboard-container').innerHTML = html;
-    });
-    // Lógica do botão Iniciar
-    document.getElementById('main-start-btn').onclick = function() {
-      window.location.href = 'src/html/customization.html';
-    };
-  </script>
 </body>
 </html>

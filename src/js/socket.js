@@ -1,4 +1,5 @@
 // src/js/socket.js
+// Funções de áudio serão chamadas diretamente quando disponíveis
 
 const socket = io();
 
@@ -52,6 +53,47 @@ function onFimJogo(callback) {
   socket.on('fimJogo', callback);
 }
 
+// Recebe atualizações do timer
+function onAtualizarTimer(callback) {
+  socket.on('atualizarTimer', callback);
+}
+
+// Recebe evento de tempo esgotado
+function onTempoEsgotado(callback) {
+  socket.on('tempoEsgotado', callback);
+}
+
+// Recebe eventos de áudio
+function onAudioEvent(callback) {
+  socket.on('audioEvent', (data) => {
+    // Executar ação de áudio baseada no tipo
+    switch (data.tipo) {
+      case 'success':
+        if (typeof playSuccess === 'function') playSuccess();
+        break;
+      case 'buzzer':
+        if (typeof playBuzzer === 'function') playBuzzer();
+        break;
+      case 'heartbeat':
+        if (data.acao === 'play') {
+          if (typeof playHeartbeat === 'function') playHeartbeat();
+        } else if (data.acao === 'stop') {
+          if (typeof stopHeartbeat === 'function') stopHeartbeat();
+        }
+        break;
+      case 'victory':
+        if (typeof playVictory === 'function') playVictory();
+        break;
+      case 'lost':
+        if (typeof playLost === 'function') playLost();
+        break;
+    }
+    
+    // Chamar callback se fornecido
+    if (callback) callback(data);
+  });
+}
+
 // Configura a sala (apenas criador)
 function configurarSala(codigo, configuracoes, callback) {
   socket.emit('configurarSala', { codigo, configuracoes }, callback);
@@ -74,6 +116,9 @@ window.salaSocket = {
   onAtualizarJogo,
   onFeedback,
   onFimJogo,
+  onAtualizarTimer,
+  onTempoEsgotado,
+  onAudioEvent,
   configurarSala,
   pedirEstadoSala,
   _socket: socket
