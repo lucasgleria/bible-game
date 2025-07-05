@@ -62,11 +62,28 @@
               if (typeof renderMultiplayerState === 'function') {
                 renderMultiplayerState(estado);
               }
+              // Salvar estado no localStorage para backup
+              localStorage.setItem('lastGameState', JSON.stringify(estado));
+              
+              // Verificação adicional após renderização
+              setTimeout(() => {
+                const answerArea = document.getElementById('answer-area');
+                const teamName = localStorage.getItem('teamName');
+                const grupoIndex = estado.grupos.findIndex(g => g.nome === teamName);
+                
+                if (estado.turno === grupoIndex && grupoIndex !== -1 && answerArea && answerArea.style.display === 'none') {
+                  console.log('[GAME] Corrigindo input oculto após reconexão');
+                  answerArea.style.display = 'block';
+                }
+              }, 200);
             } else {
               console.warn('[GAME] Não foi possível obter o estado inicial da sala. Sala pode não estar no estado de jogo ou expirou.');
-              // Opcional: Redirecionar ou mostrar mensagem se não conseguir estado
-              // alert('A sala de jogo pode ter expirado. Criando nova sala ou entrando em outra.');
-              // window.location.href = '../index.html';
+              // Tentar usar estado salvo como fallback
+              const savedState = localStorage.getItem('lastGameState');
+              if (savedState && typeof renderMultiplayerState === 'function') {
+                console.log('[GAME] Usando estado salvo como fallback');
+                renderMultiplayerState(JSON.parse(savedState));
+              }
             }
           });
         }
@@ -96,7 +113,10 @@
 
     const savedState = localStorage.getItem('lastGameState');
       if (savedState && typeof renderMultiplayerState === 'function') {
+        console.log('[GAME] Aplicando estado salvo como fallback');
         renderMultiplayerState(JSON.parse(savedState));
+      } else {
+        console.log('[GAME] Nenhum estado salvo disponível ou função não encontrada');
       }
 
   </script>

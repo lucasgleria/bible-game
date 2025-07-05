@@ -96,7 +96,16 @@ window.renderMultiplayerState = function(estado) {
   const grupoIndex = eu ? estado.grupos.indexOf(eu) : -1;
 
   console.log('[DEBUG] Índice do grupo local:', grupoIndex, '| Turno atual:', estado.turno);
-
+  console.log('[DEBUG] Grupo encontrado:', eu);
+  if (grupoIndex === -1) {
+    console.error('[ERRO] Seu grupo não foi encontrado em estado.grupos! teamName:', teamName, '| grupos:', estado.grupos.map(g => g.nome));
+    const answerArea = document.getElementById('answer-area');
+    if (answerArea) {
+      answerArea.style.display = 'block';
+      answerArea.innerHTML = '<div style="color: red; font-weight: bold; text-align: center;">ERRO: Seu grupo não foi encontrado na sala. Tente recarregar ou entrar novamente.</div>';
+    }
+    return;
+  }
 
   category.textContent = `Categoria: ${estado.carta.categoria}`;
   // Renderizar dicas SEMPRE
@@ -109,11 +118,17 @@ window.renderMultiplayerState = function(estado) {
     hints.appendChild(li);
   });
   // Exibir input de resposta apenas para o grupo da vez
-  if (estado.turno === grupoIndex) {
+  console.log('[DEBUG] Verificando exibição do input - Turno:', estado.turno, '| Grupo local:', grupoIndex);
+  
+  if (estado.turno === grupoIndex && grupoIndex !== -1) {
+    console.log('[DEBUG] Mostrando input para o grupo da vez');
     answerArea.style.display = 'block';
     const guessInput = answerArea.querySelector('#guess');
     const answerBtn = answerArea.querySelector('button');
-    if (guessInput) guessInput.disabled = false;
+    if (guessInput) {
+      guessInput.disabled = false;
+      guessInput.value = ''; // Limpar input
+    }
     if (answerBtn) answerBtn.disabled = false;
     
     // Mostrar botão de dica apenas para o grupo da vez
@@ -123,6 +138,7 @@ window.renderMultiplayerState = function(estado) {
       dicaBtn.disabled = false;
     }
   } else {
+    console.log('[DEBUG] Ocultando input - não é o turno do grupo local');
     answerArea.style.display = 'none';
     
     // Ocultar botão de dica para grupos que não estão na vez
@@ -135,7 +151,12 @@ window.renderMultiplayerState = function(estado) {
   
   // Renderizar timer se disponível
   if (estado.timer && typeof renderTimer === 'function') {
+    console.log('[RENDER] Renderizando timer:', estado.timer);
     renderTimer(estado.timer.tempo, estado.timer.maxTempo);
+  } else if (estado.timer) {
+    console.warn('[RENDER] Timer disponível mas função renderTimer não encontrada');
+  } else {
+    console.log('[RENDER] Nenhum timer disponível no estado');
   }
   
   // Atualizar indicador de turno
@@ -146,6 +167,24 @@ window.renderMultiplayerState = function(estado) {
   
   // Destacar o grupo que está jogando no momento
   highlightGroupTurnMultiplayer(estado.turno);
+  
+  // Salvar estado no localStorage para reconexão
+  try {
+    localStorage.setItem('lastGameState', JSON.stringify(estado));
+  } catch (error) {
+    console.warn('[RENDER] Erro ao salvar estado no localStorage:', error);
+  }
+  
+  // Verificação adicional: garantir que o input esteja visível se for o turno do grupo
+  setTimeout(() => {
+    if (estado.turno === grupoIndex && grupoIndex !== -1) {
+      const answerArea = document.getElementById('answer-area');
+      if (answerArea && answerArea.style.display === 'none') {
+        console.log('[DEBUG] Corrigindo input oculto - forçando exibição');
+        answerArea.style.display = 'block';
+      }
+    }
+  }, 100);
 } // <--- ESTA É A CHAVE DE FECHAMENTO FINAL PARA window.renderMultiplayerState!
 
 // Função para carregar e exibir o leaderboard

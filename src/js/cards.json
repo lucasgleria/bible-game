@@ -141,5 +141,104 @@
       "Jesus apareceu aos discípulos.",
       "Meu nome começa com R."
     ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "João",
+    "hints": [
+      "Fui discípulo amado de Jesus.",
+      "Escrevi o quarto evangelho.",
+      "Fui o último apóstolo a morrer.",
+      "Estava aos pés da cruz.",
+      "Meu nome começa com J."
+    ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "Maria",
+    "hints": [
+      "Fui escolhida para ser mãe de Jesus.",
+      "Recebi a visita do anjo Gabriel.",
+      "Cantei o Magnificat.",
+      "Estava aos pés da cruz.",
+      "Meu nome começa com M."
+    ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "José",
+    "hints": [
+      "Fui pai adotivo de Jesus.",
+      "Recebi sonhos de Deus.",
+      "Fui carpinteiro de profissão.",
+      "Fugi para o Egito com a família.",
+      "Meu nome começa com J."
+    ]
+  },
+  {
+    "category": "Lugar",
+    "answer": "Galileia",
+    "hints": [
+      "Região onde Jesus cresceu.",
+      "Fica ao norte de Israel.",
+      "Jesus fez muitos milagres aqui.",
+      "Mar da Galileia fica aqui.",
+      "Meu nome começa com G."
+    ]
+  },
+  {
+    "category": "Lugar",
+    "answer": "Samaria",
+    "hints": [
+      "Região entre Galileia e Judeia.",
+      "Judeus evitavam passar por aqui.",
+      "Jesus falou com uma mulher aqui.",
+      "Parábola do bom samaritano.",
+      "Meu nome começa com S."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Pentecostes",
+    "hints": [
+      "Espírito Santo desceu sobre os discípulos.",
+      "Aconteceu 50 dias após a Páscoa.",
+      "Pedro pregou seu primeiro sermão.",
+      "Milhares se converteram.",
+      "Meu nome começa com P."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Transfiguração",
+    "hints": [
+      "Jesus apareceu com Moisés e Elias.",
+      "Aconteceu no monte.",
+      "Pedro, Tiago e João estavam presentes.",
+      "Voz do céu disse: 'Este é meu Filho'.",
+      "Meu nome começa com T."
+    ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "Tiago",
+    "hints": [
+      "Fui irmão de João.",
+      "Fui um dos primeiros apóstolos.",
+      "Fui morto por Herodes.",
+      "Fui chamado 'filho do trovão'.",
+      "Meu nome começa com T."
+    ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "André",
+    "hints": [
+      "Fui irmão de Pedro.",
+      "Fui pescador como Pedro.",
+      "Fui o primeiro a seguir Jesus.",
+      "Apresentei Pedro a Jesus.",
+      "Meu nome começa com A."
+    ]
   }
 ] 

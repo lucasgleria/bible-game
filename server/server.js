@@ -61,7 +61,7 @@ app.post('/leaderboard', (req, res) => {
   
   // Usar a função unificada para salvar
   salvarResultadoLeaderboard(newResult.grupo, newResult.pontos, newResult.acertos);
-  res.json({ success: true });
+      res.json({ success: true });
 });
 
 // --- Lógica de Salas e Multiplayer ---
@@ -115,40 +115,40 @@ function carregarCartas() {
     
     // Fallback para cartas hardcoded em caso de erro
     cartas = [
-      {
-        categoria: "Pessoa",
-        resposta: "Moisés",
-        dicas: [
-          "Fui colocado num cesto no rio quando bebê.",
-          "Fui chamado por Deus numa sarça ardente.",
-          "Lidereio o povo na travessia do Mar Vermelho.",
-          "Recebi as tábuas da Lei.",
-          "Meu nome começa com M."
-        ]
-      },
-      {
-        categoria: "Lugar",
-        resposta: "Jerusalém",
-        dicas: [
-          "Cidade onde o templo foi construído.",
-          "Local do ministério e morte de Jesus.",
-          "Cidade santa para judeus e cristãos.",
-          "Davi foi o rei aqui.",
-          "Meu nome começa com J."
-        ]
-      },
-      {
-        categoria: "Acontecimento",
-        resposta: "Dilúvio",
-        dicas: [
-          "Teve duração de 40 dias e 40 noites.",
-          "Foi anunciado por Deus a Noé.",
-          "Uma arca foi construída.",
-          "Todos os seres vivos foram salvos em pares.",
-          "Meu nome começa com D."
-        ]
-      }
-    ];
+  {
+    categoria: "Pessoa",
+    resposta: "Moisés",
+    dicas: [
+      "Fui colocado num cesto no rio quando bebê.",
+      "Fui chamado por Deus numa sarça ardente.",
+      "Lidereio o povo na travessia do Mar Vermelho.",
+      "Recebi as tábuas da Lei.",
+      "Meu nome começa com M."
+    ]
+  },
+  {
+    categoria: "Lugar",
+    resposta: "Jerusalém",
+    dicas: [
+      "Cidade onde o templo foi construído.",
+      "Local do ministério e morte de Jesus.",
+      "Cidade santa para judeus e cristãos.",
+      "Davi foi o rei aqui.",
+      "Meu nome começa com J."
+    ]
+  },
+  {
+    categoria: "Acontecimento",
+    resposta: "Dilúvio",
+    dicas: [
+      "Teve duração de 40 dias e 40 noites.",
+      "Foi anunciado por Deus a Noé.",
+      "Uma arca foi construída.",
+      "Todos os seres vivos foram salvos em pares.",
+      "Meu nome começa com D."
+    ]
+  }
+];
     console.log('[CARDS] Usando cartas fallback');
   }
 }
@@ -231,8 +231,12 @@ function enviarEstadoJogo(codigo) {
 function proximaRodada(codigo) {
   const sala = salas[codigo];
   if (!sala) return;
+  
+  // Verificar se ambos os grupos já jogaram nesta rodada
+  if (sala.turno === 1) {
+    // Ambos os grupos já jogaram, passar para próxima rodada
   sala.rodada++;
-  sala.turno = 1 - sala.turno;
+    sala.turno = 0; // Voltar para o primeiro grupo
   sala.dicaAtual = 1;
   sala.respondeu = false;
   
@@ -275,6 +279,7 @@ function proximaRodada(codigo) {
     return;
   }
   
+    // Nova rodada - pegar nova carta
   sala.cartaAtual = sala.cartasRestantes.pop();
   enviarEstadoJogo(codigo);
   
@@ -282,6 +287,24 @@ function proximaRodada(codigo) {
   setTimeout(() => {
     iniciarTimerJogo(codigo);
   }, 1000);
+  } else {
+    // Apenas passar para o próximo grupo na mesma rodada
+    sala.turno = 1;
+    sala.dicaAtual = 1;
+    sala.respondeu = false;
+    
+    // Parar timer anterior
+    pararTimerJogo(codigo);
+    
+    // Pegar nova carta para o próximo grupo
+    sala.cartaAtual = sala.cartasRestantes.pop();
+    enviarEstadoJogo(codigo);
+    
+    // Iniciar timer para o próximo grupo
+    setTimeout(() => {
+      iniciarTimerJogo(codigo);
+    }, 1000);
+  }
 }
 
 function iniciarTimerJogo(codigo) {
@@ -325,19 +348,38 @@ function iniciarTimerJogo(codigo) {
       // Evento de áudio: buzzer quando tempo esgota
       io.to(codigo).emit('audioEvent', { tipo: 'buzzer', acao: 'play' });
       
-      // Tempo esgotado - passar para próxima rodada
+      // Tempo esgotado - passar para próximo grupo ou próxima rodada
       io.to(codigo).emit('tempoEsgotado', { 
         resposta: sala.cartaAtual.resposta,
         turnoAnterior: sala.turno,
-        proximoTurno: 1 - sala.turno
+        proximoTurno: sala.turno === 0 ? 1 : 0
       });
       
-      // Aguardar 2 segundos para mostrar feedback, depois passar para próxima rodada
+      // Aguardar 2 segundos para mostrar feedback, depois passar para próximo grupo/rodada
       setTimeout(() => {
         proximaRodada(codigo);
       }, 2000);
     }
   }, 1000);
+}
+
+function proximaPergunta(codigo) {
+  const sala = salas[codigo];
+  if (!sala || sala.estado !== 'jogo') return;
+  
+  // Verificar se ainda há cartas disponíveis
+  if (sala.cartasRestantes.length === 0) {
+    // Não há mais cartas, finalizar turno
+    proximaRodada(codigo);
+    return;
+  }
+  
+  // Pegar nova carta
+  sala.cartaAtual = sala.cartasRestantes.pop();
+  sala.dicaAtual = 1;
+  
+  // Enviar nova pergunta (timer continua rodando)
+  enviarEstadoJogo(codigo);
 }
 
 function pararTimerJogo(codigo) {
@@ -382,12 +424,15 @@ io.on('connection', (socket) => {
   // --- ENTRADA EM SALA ---
   socket.on('entrarSala', ({ codigo, nomeGrupo, groupUUID }, callback) => {
     const sala = salas[codigo];
+    console.log('[DEBUG][entrarSala] Parâmetros recebidos:', { codigo, nomeGrupo, groupUUID });
     if (!sala) return callback({ sucesso: false, mensagem: 'Sala não encontrada.' });
     // Se já existe um grupo com o mesmo groupUUID, atualize o id e nome, não adicione novo grupo
     let grupoExistente = null;
     if (groupUUID) {
       grupoExistente = sala.grupos.find(g => g.groupUUID === groupUUID);
+      console.log('[DEBUG][entrarSala] Grupos atuais na sala:', sala.grupos.map(g => ({ nome: g.nome, groupUUID: g.groupUUID, id: g.id })));
       if (grupoExistente) {
+        console.log('[DEBUG][entrarSala] Grupo existente encontrado para groupUUID:', groupUUID, '| grupo:', grupoExistente);
         grupoExistente.id = socket.id;
         grupoExistente.nome = nomeGrupo;
         grupoExistente.pronto = false; // Ao reconectar, volta a não estar pronto
@@ -410,6 +455,7 @@ io.on('connection', (socket) => {
     }
     if (sala.grupos.length >= 2) return callback({ sucesso: false, mensagem: 'Sala cheia.' });
     sala.grupos.push({ id: socket.id, nome: nomeGrupo, pronto: false, groupUUID });
+    console.log('[DEBUG][entrarSala] Novo grupo adicionado:', { id: socket.id, nome: nomeGrupo, pronto: false, groupUUID });
     socket.join(codigo);
     socket.sala = codigo;
     // Cancelar timeout de remoção se alguém reconectar
@@ -526,10 +572,14 @@ io.on('connection', (socket) => {
   
       setTimeout(() => {
         enviarEstadoJogo(codigo);
+        // Iniciar timer para primeira rodada
+        setTimeout(() => {
+          iniciarTimerJogo(codigo);
+        }, 1000);
       }, 1000);
     }
   });
-
+  
   // Grupo pede dica extra
   socket.on('pedirDica', () => {
     const codigo = socket.sala;
@@ -545,33 +595,36 @@ io.on('connection', (socket) => {
   socket.on('responder', (resposta) => {
     const codigo = socket.sala;
     const sala = salas[codigo];
-    if (!sala || sala.estado !== 'jogo' || sala.respondeu) return;
+    if (!sala || sala.estado !== 'jogo') return;
     const turno = sala.turno;
+    
     if (resposta.trim().toLowerCase() === sala.cartaAtual.resposta.toLowerCase()) {
       // Pontuação por dica
       const pontosPorDica = [10, 8, 5, 3, 1];
       const pontos = pontosPorDica[sala.dicaAtual - 1] || 1;
       sala.pontuacao[turno] += pontos;
       sala.acertos[turno] += 1;
-      sala.respondeu = true;
-      
-      // Parar timer quando acertar
-      pararTimerJogo(codigo);
       
       // Evento de áudio: sucesso
       io.to(codigo).emit('audioEvent', { tipo: 'success', acao: 'play' });
       
       io.to(codigo).emit('feedback', { tipo: 'acerto', pontos });
+      
+      // Continuar com nova pergunta (não parar timer)
+      setTimeout(() => {
+        proximaPergunta(codigo);
+      }, 1200);
     } else {
       // Evento de áudio: erro
       io.to(socket.id).emit('audioEvent', { tipo: 'buzzer', acao: 'play' });
       
       io.to(socket.id).emit('feedback', { tipo: 'erro' });
-      return;
-    }
+      
+      // Continuar com nova pergunta mesmo errando (não parar timer)
     setTimeout(() => {
-      proximaRodada(codigo);
+        proximaPergunta(codigo);
     }, 1200);
+    }
   });
 
   // Evento para fornecer o estado atual da sala para um socket
@@ -588,7 +641,12 @@ io.on('connection', (socket) => {
       },
       pontuacao: sala.pontuacao,
       acertos: sala.acertos,
-      grupos: sala.grupos
+      grupos: sala.grupos,
+      timer: {
+        tempo: sala.tempoRestante || 60,
+        maxTempo: 60,
+        ativo: sala.timerAtivo || false
+      }
     });
   });
 
