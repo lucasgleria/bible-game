@@ -239,6 +239,33 @@ async function loadLeaderboard() {
   }
 }
 
+// Exibe mensagem de rodada encerrada em tela cheia azul
+function showRoundEndFeedback(rodada, maxRodadas) {
+  const feedback = document.getElementById('feedback-animation');
+  feedback.innerHTML = '';
+  feedback.style.display = 'flex';
+  feedback.style.justifyContent = 'center';
+  feedback.style.alignItems = 'center';
+  feedback.style.position = 'fixed';
+  feedback.style.top = '0';
+  feedback.style.left = '0';
+  feedback.style.width = '100vw';
+  feedback.style.height = '100vh';
+  feedback.style.zIndex = '10000';
+  feedback.style.pointerEvents = 'none';
+  feedback.className = '';
+  feedback.innerHTML = `
+    <div style="background: rgba(33, 150, 243, 0.18); color: #1a237e; padding: 32px 24px; border-radius: 18px; font-weight: bold; font-size: 2.1em; border: 2.5px solid #1976d2; box-shadow: 0 2px 16px rgba(33,150,243,0.13); text-align:center; max-width: 90vw;">
+      <div>Rodada ${rodada} encerrada</div>
+      <div style='font-size:0.7em; color:#1976d2; margin-top:10px;'>Faltam ${maxRodadas - rodada} rodada(s)</div>
+    </div>
+  `;
+  setTimeout(() => {
+    feedback.style.display = 'none';
+    feedback.innerHTML = '';
+  }, 4000);
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('[MAIN] Iniciando carregamento...');
@@ -336,26 +363,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       
       // Tempo esgotado
       window.salaSocket.onTempoEsgotado(({ resposta, turnoAnterior, proximoTurno }) => {
-        const grupoAnterior = estadoAtual?.grupos?.[turnoAnterior]?.nome || `Grupo ${turnoAnterior + 1}`;
-        const proximoGrupo = estadoAtual?.grupos?.[proximoTurno]?.nome || `Grupo ${proximoTurno + 1}`;
-        
-        showFeedback('error', `⏰ Tempo esgotado! A resposta era: ${resposta}`);
-        
-        setTimeout(() => {
-          const turnIndicator = document.getElementById('turn-indicator');
-          if (turnIndicator) {
-            turnIndicator.innerHTML = `
-              <div style="background: var(--danger); color: white; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                <strong>⏰ TEMPO ESGOTADO!</strong><br>
-                <span style="font-size: 0.9em;">Vez de: <strong>${proximoGrupo}</strong></span>
-              </div>
-            `;
-            
-            setTimeout(() => {
-              turnIndicator.innerHTML = '';
-            }, 4000);
-          }
-        }, 1500);
+        const rodadaAtual = estadoAtual?.rodada || 1;
+        const maxRodadas = estadoAtual?.maxRodadas || 1;
+        // Exibir mensagem de rodada encerrada em tela cheia azul
+        showRoundEndFeedback(rodadaAtual, maxRodadas);
       });
       
       // Fim de jogo
