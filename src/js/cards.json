@@ -31,5 +31,115 @@
       "Todos os seres vivos foram salvos em pares.",
       "Meu nome começa com D."
     ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "Davi",
+    "hints": [
+      "Fui um jovem pastor que derrotei um gigante.",
+      "Fui ungido rei por Samuel.",
+      "Escrevi muitos salmos.",
+      "Fui pai de Salomão.",
+      "Meu nome começa com D."
+    ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "Paulo",
+    "hints": [
+      "Fui perseguidor da igreja antes da conversão.",
+      "Fiz três viagens missionárias.",
+      "Escrevi muitas cartas do Novo Testamento.",
+      "Fui cego por três dias após encontrar Jesus.",
+      "Meu nome começa com P."
+    ]
+  },
+  {
+    "category": "Pessoa",
+    "answer": "Pedro",
+    "hints": [
+      "Fui pescador antes de seguir Jesus.",
+      "Neguei Jesus três vezes.",
+      "Fui o primeiro a pregar no Pentecostes.",
+      "Escrevi duas cartas do Novo Testamento.",
+      "Meu nome começa com P."
+    ]
+  },
+  {
+    "category": "Lugar",
+    "answer": "Belém",
+    "hints": [
+      "Cidade onde Jesus nasceu.",
+      "Fica na região da Judeia.",
+      "É mencionada como cidade de Davi.",
+      "Os magos vieram aqui buscar o rei.",
+      "Meu nome começa com B."
+    ]
+  },
+  {
+    "category": "Lugar",
+    "answer": "Nazaré",
+    "hints": [
+      "Cidade onde Jesus cresceu.",
+      "Fica na região da Galileia.",
+      "Jesus era conhecido como 'de Nazaré'.",
+      "Maria recebeu a anunciação aqui.",
+      "Meu nome começa com N."
+    ]
+  },
+  {
+    "category": "Lugar",
+    "answer": "Canaã",
+    "hints": [
+      "Terra prometida por Deus a Abraão.",
+      "Foi conquistada por Josué.",
+      "Era habitada por várias tribos.",
+      "Flui leite e mel, segundo a Bíblia.",
+      "Meu nome começa com C."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Criação",
+    "hints": [
+      "Deus criou o mundo em 6 dias.",
+      "O homem foi criado do pó da terra.",
+      "A mulher foi criada da costela do homem.",
+      "Deus descansou no sétimo dia.",
+      "Meu nome começa com C."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Êxodo",
+    "hints": [
+      "Povo hebreu saiu do Egito.",
+      "Moisés liderou o povo.",
+      "Mar Vermelho foi aberto.",
+      "Dez pragas foram enviadas.",
+      "Meu nome começa com Ê."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Nascimento de Jesus",
+    "hints": [
+      "Aconteceu em Belém.",
+      "Pastores foram avisados por anjos.",
+      "Três magos vieram do oriente.",
+      "Jesus nasceu numa manjedoura.",
+      "Meu nome começa com N."
+    ]
+  },
+  {
+    "category": "Acontecimento",
+    "answer": "Ressurreição",
+    "hints": [
+      "Jesus ressuscitou no terceiro dia.",
+      "Mulheres foram ao túmulo vazio.",
+      "Pedro e João correram ao túmulo.",
+      "Jesus apareceu aos discípulos.",
+      "Meu nome começa com R."
+    ]
   }
 ] 

@@ -9,6 +9,39 @@ import { playSuccess, playBuzzer, playHeartbeat, stopHeartbeat, toggleMute, setA
 // Variável global para armazenar estado atual
 let estadoAtual = null;
 
+// Função para destacar o grupo que está jogando no momento (modo multiplayer)
+function highlightGroupTurnMultiplayer(turno) {
+  const scoreboard = document.getElementById('scoreboard');
+  if (!scoreboard) return;
+  
+  const pGrupo1 = scoreboard.children[0];
+  const pGrupo2 = scoreboard.children[1];
+  
+  if (!pGrupo1 || !pGrupo2) return;
+  
+  // Resetar estilos de ambos os grupos
+  pGrupo1.style.background = 'var(--card-bg)';
+  pGrupo1.style.color = 'var(--primary)';
+  pGrupo1.style.transform = 'scale(1)';
+  pGrupo1.style.transition = 'all 0.3s ease';
+  
+  pGrupo2.style.background = 'var(--card-bg)';
+  pGrupo2.style.color = 'var(--primary)';
+  pGrupo2.style.transform = 'scale(1)';
+  pGrupo2.style.transition = 'all 0.3s ease';
+  
+  // Destacar o grupo que está jogando
+  if (turno === 0) {
+    pGrupo1.style.background = 'var(--success)';
+    pGrupo1.style.color = '#fff';
+    pGrupo1.style.transform = 'scale(1.08)';
+  } else {
+    pGrupo2.style.background = 'var(--success)';
+    pGrupo2.style.color = '#fff';
+    pGrupo2.style.transform = 'scale(1.08)';
+  }
+}
+
 // Tornar renderMultiplayerState global para ser acessível do game.html
 window.renderMultiplayerState = function(estado) {
   // Atualizar estado global
@@ -111,7 +144,8 @@ window.renderMultiplayerState = function(estado) {
     turnIndicator.textContent = `Vez de: ${estado.grupos[estado.turno].nome}`;
   }
   
-  highlightGroupTurn(); // Certifique-se de que highlightGroupTurn é importado e funciona com os IDs/classes corretas
+  // Destacar o grupo que está jogando no momento
+  highlightGroupTurnMultiplayer(estado.turno);
 } // <--- ESTA É A CHAVE DE FECHAMENTO FINAL PARA window.renderMultiplayerState!
 
 // Função para carregar e exibir o leaderboard

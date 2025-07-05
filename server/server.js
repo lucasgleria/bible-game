@@ -53,18 +53,15 @@ app.get('/leaderboard', (req, res) => {
 
 app.post('/leaderboard', (req, res) => {
   const newResult = req.body;
-  fs.readFile(LEADERBOARD_PATH, 'utf8', (err, data) => {
-    if (err) return res.status(500).json({ error: 'Erro ao ler leaderboard.' });
-    let leaderboard = [];
-    try {
-      leaderboard = JSON.parse(data);
-    } catch (e) {}
-    leaderboard.push(newResult);
-    fs.writeFile(LEADERBOARD_PATH, JSON.stringify(leaderboard, null, 2), err => {
-      if (err) return res.status(500).json({ error: 'Erro ao salvar leaderboard.' });
-      res.json({ success: true });
-    });
-  });
+  
+  // Validar dados recebidos
+  if (!newResult.grupo || typeof newResult.pontos !== 'number' || typeof newResult.acertos !== 'number') {
+    return res.status(400).json({ error: 'Dados inválidos para leaderboard.' });
+  }
+  
+  // Usar a função unificada para salvar
+  salvarResultadoLeaderboard(newResult.grupo, newResult.pontos, newResult.acertos);
+  res.json({ success: true });
 });
 
 // --- Lógica de Salas e Multiplayer ---
@@ -91,60 +88,116 @@ function shuffle(array) {
   }
 }
 
-// Cartas do jogo (pode ser expandido)
-const cartas = [
-  {
-    categoria: "Pessoa",
-    resposta: "Moisés",
-    dicas: [
-      "Fui colocado num cesto no rio quando bebê.",
-      "Fui chamado por Deus numa sarça ardente.",
-      "Lidereio o povo na travessia do Mar Vermelho.",
-      "Recebi as tábuas da Lei.",
-      "Meu nome começa com M."
-    ]
-  },
-  {
-    categoria: "Lugar",
-    resposta: "Jerusalém",
-    dicas: [
-      "Cidade onde o templo foi construído.",
-      "Local do ministério e morte de Jesus.",
-      "Cidade santa para judeus e cristãos.",
-      "Davi foi o rei aqui.",
-      "Meu nome começa com J."
-    ]
-  },
-  {
-    categoria: "Acontecimento",
-    resposta: "Dilúvio",
-    dicas: [
-      "Teve duração de 40 dias e 40 noites.",
-      "Foi anunciado por Deus a Noé.",
-      "Uma arca foi construída.",
-      "Todos os seres vivos foram salvos em pares.",
-      "Meu nome começa com D."
-    ]
+// ---- ANTEÇÃO AQUI ---- 
+// Carregar cartas do arquivo JSON
+let cartas = [];
+
+// Função para carregar cartas do arquivo
+function carregarCartas() {
+  const fs = require('fs');
+  const path = require('path');
+  const cardsPath = path.join(__dirname, '../src/js/cards.json');
+  
+  try {
+    const data = fs.readFileSync(cardsPath, 'utf8');
+    const cardsData = JSON.parse(data);
+    
+    // Converter formato do cards.json para o formato usado no backend
+    cartas = cardsData.map(card => ({
+      categoria: card.category,
+      resposta: card.answer,
+      dicas: card.hints
+    }));
+    
+    console.log(`[CARDS] ${cartas.length} cartas carregadas com sucesso`);
+  } catch (error) {
+    console.error('[CARDS] Erro ao carregar cartas:', error);
+    
+    // Fallback para cartas hardcoded em caso de erro
+    cartas = [
+      {
+        categoria: "Pessoa",
+        resposta: "Moisés",
+        dicas: [
+          "Fui colocado num cesto no rio quando bebê.",
+          "Fui chamado por Deus numa sarça ardente.",
+          "Lidereio o povo na travessia do Mar Vermelho.",
+          "Recebi as tábuas da Lei.",
+          "Meu nome começa com M."
+        ]
+      },
+      {
+        categoria: "Lugar",
+        resposta: "Jerusalém",
+        dicas: [
+          "Cidade onde o templo foi construído.",
+          "Local do ministério e morte de Jesus.",
+          "Cidade santa para judeus e cristãos.",
+          "Davi foi o rei aqui.",
+          "Meu nome começa com J."
+        ]
+      },
+      {
+        categoria: "Acontecimento",
+        resposta: "Dilúvio",
+        dicas: [
+          "Teve duração de 40 dias e 40 noites.",
+          "Foi anunciado por Deus a Noé.",
+          "Uma arca foi construída.",
+          "Todos os seres vivos foram salvos em pares.",
+          "Meu nome começa com D."
+        ]
+      }
+    ];
+    console.log('[CARDS] Usando cartas fallback');
   }
-];
+}
+
+// Carregar cartas na inicialização
+carregarCartas();
+
+// Variável para controlar acesso concorrente ao leaderboard
+let leaderboardLock = false;
+
+// Função para limpar o lock em caso de erro
+function clearLeaderboardLock() {
+  leaderboardLock = false;
+}
 
 // Função para salvar resultado no leaderboard
+// Usa um lock simples para evitar condições de corrida e corrupção do arquivo
 function salvarResultadoLeaderboard(grupo, pontos, acertos) {
   const fs = require('fs');
   const path = require('path');
   const LEADERBOARD_PATH = path.join(__dirname, 'leaderboard.json');
   const novoRegistro = { grupo, pontos, acertos, data: new Date().toISOString() };
+  
+  // Se já está sendo escrito, aguardar
+  if (leaderboardLock) {
+    setTimeout(() => salvarResultadoLeaderboard(grupo, pontos, acertos), 100);
+    return;
+  }
+  
+  leaderboardLock = true;
+  
   fs.readFile(LEADERBOARD_PATH, 'utf8', (err, data) => {
     let leaderboard = [];
     if (!err && data) {
       try {
         leaderboard = JSON.parse(data);
-      } catch (e) { leaderboard = []; }
+      } catch (e) { 
+        console.error('[LEADERBOARD] Erro ao parsear JSON existente:', e);
+        leaderboard = []; 
+      }
     }
     leaderboard.push(novoRegistro);
     fs.writeFile(LEADERBOARD_PATH, JSON.stringify(leaderboard, null, 2), err => {
       if (err) {
         console.error('[ERRO] Falha ao salvar leaderboard:', err);
+        clearLeaderboardLock();
+      } else {
+        console.log('[LEADERBOARD] Resultado salvo:', novoRegistro);
+        leaderboardLock = false;
       }
     });
   });
@@ -383,6 +436,53 @@ io.on('connection', (socket) => {
   });
 
   // Marcar grupo como pronto
+  // socket.on('grupoPronto', () => {
+  //   const codigo = socket.sala;
+  //   const sala = salas[codigo];
+  //   if (!sala) return;
+  //   const grupo = sala.grupos.find(g => g.id === socket.id);
+  //   if (grupo) grupo.pronto = true;
+  //   io.to(codigo).emit('atualizarSala', { grupos: sala.grupos });
+  
+  //   const todosProntos = sala.grupos.length === 2 && sala.grupos.every(g => g.pronto);
+  //   if (todosProntos) {
+  //     sala.estado = 'jogo';
+  //     sala.rodada = 1;
+  //     sala.turno = 0;
+  //     sala.pontuacao = [0, 0];
+  //     sala.acertos = [0, 0];
+  //     sala.maxRodadas = (sala.configuracoes && sala.configuracoes.maxRodadas) ? sala.configuracoes.maxRodadas : 5;
+  //     sala.cartasRestantes = [...cartas];
+  //     shuffle(sala.cartasRestantes);
+  //     sala.cartaAtual = sala.cartasRestantes.pop();
+  //     sala.dicaAtual = 1;
+  //     sala.respondeu = false;
+  
+  //     const estadoInicial = {
+  //       rodada: sala.rodada,
+  //       maxRodadas: sala.maxRodadas,
+  //       turno: sala.turno,
+  //       carta: {
+  //         categoria: sala.cartaAtual.categoria,
+  //         dicas: sala.cartaAtual.dicas.slice(0, sala.dicaAtual)
+  //       },
+  //       pontuacao: sala.pontuacao,
+  //       acertos: sala.acertos,
+  //       grupos: sala.grupos
+  //     };
+  
+  //     io.to(codigo).emit('iniciarJogo', estadoInicial);
+  
+  //     setTimeout(() => {
+  //       enviarEstadoJogo(codigo);
+  //       // Iniciar timer para primeira rodada
+  //       setTimeout(() => {
+  //         iniciarTimerJogo(codigo);
+  //       }, 1000);
+  //     }, 1000);
+  //   }
+  // });
+  
   socket.on('grupoPronto', () => {
     const codigo = socket.sala;
     const sala = salas[codigo];
@@ -400,6 +500,10 @@ io.on('connection', (socket) => {
       sala.acertos = [0, 0];
       sala.maxRodadas = (sala.configuracoes && sala.configuracoes.maxRodadas) ? sala.configuracoes.maxRodadas : 5;
       sala.cartasRestantes = [...cartas];
+  
+      const rodadasPossiveis = Math.min(sala.maxRodadas, sala.cartasRestantes.length);
+      sala.maxRodadas = rodadasPossiveis;
+  
       shuffle(sala.cartasRestantes);
       sala.cartaAtual = sala.cartasRestantes.pop();
       sala.dicaAtual = 1;
@@ -422,14 +526,10 @@ io.on('connection', (socket) => {
   
       setTimeout(() => {
         enviarEstadoJogo(codigo);
-        // Iniciar timer para primeira rodada
-        setTimeout(() => {
-          iniciarTimerJogo(codigo);
-        }, 1000);
       }, 1000);
     }
   });
-  
+
   // Grupo pede dica extra
   socket.on('pedirDica', () => {
     const codigo = socket.sala;
@@ -473,10 +573,6 @@ io.on('connection', (socket) => {
       proximaRodada(codigo);
     }, 1200);
   });
-
-
-
-
 
   // Evento para fornecer o estado atual da sala para um socket
   socket.on('pedirEstadoSala', (codigo, callback) => {
