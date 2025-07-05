@@ -316,11 +316,11 @@ function iniciarTimerJogo(codigo) {
     clearInterval(gameTimers[codigo]);
   }
   
-  sala.tempoRestante = 60;
+  sala.tempoRestante = 30;
   sala.timerAtivo = true;
   
   // Enviar tempo inicial
-  io.to(codigo).emit('atualizarTimer', { tempo: sala.tempoRestante, maxTempo: 60 });
+  io.to(codigo).emit('atualizarTimer', { tempo: sala.tempoRestante, maxTempo: 30 });
   
   gameTimers[codigo] = setInterval(() => {
     if (!sala || sala.estado !== 'jogo' || !sala.timerAtivo) {
@@ -332,7 +332,7 @@ function iniciarTimerJogo(codigo) {
     sala.tempoRestante--;
     
     // Enviar atualização do timer para todos os clientes
-    io.to(codigo).emit('atualizarTimer', { tempo: sala.tempoRestante, maxTempo: 60 });
+    io.to(codigo).emit('atualizarTimer', { tempo: sala.tempoRestante, maxTempo: 30 });
     
     // Evento de áudio: heartbeat nos últimos 11 segundos
     if (sala.tempoRestante === 11) {
@@ -618,11 +618,12 @@ io.on('connection', (socket) => {
       io.to(socket.id).emit('audioEvent', { tipo: 'buzzer', acao: 'play' });
       
       io.to(socket.id).emit('feedback', { tipo: 'erro' });
-      
-      // Continuar com nova pergunta mesmo errando (não parar timer)
-    setTimeout(() => {
-        proximaPergunta(codigo);
-    }, 1200);
+      // NÃO chamar proximaPergunta ao errar, apenas atualize o estado para mostrar feedback
+      // A carta permanece até acertar ou acabar o tempo
+      // Apenas reenvie o estado para atualizar dicas, se necessário
+      setTimeout(() => {
+        enviarEstadoJogo(codigo);
+      }, 1200);
     }
   });
 

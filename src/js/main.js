@@ -111,6 +111,7 @@ window.renderMultiplayerState = function(estado) {
   // Renderizar dicas SEMPRE
   hints.innerHTML = '';
   let dicasParaExibir = estado.carta.dicas;
+  console.log('[DEBUG] Dicas recebidas:', dicasParaExibir);
   // Removi a lógica 'dicasOriginais' pois o backend já envia as dicas corretas
   dicasParaExibir.forEach((hint, i) => {
     let li = document.createElement('li');

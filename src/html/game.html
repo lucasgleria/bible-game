@@ -43,12 +43,13 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="../js/socket.js"></script>
   <script>
-    // Reconexão automática ao carregar a página game.html
-    const teamName = localStorage.getItem('teamName');
-    const roomCodeMultiplayer = localStorage.getItem('roomCode');
-    const groupUUID = localStorage.getItem('groupUUID'); // Certifique-se de pegar o groupUUID
-    if (teamName && roomCodeMultiplayer && groupUUID && window.salaSocket) {
-              window.salaSocket.entrarSala(roomCodeMultiplayer, teamName, (res) => {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Reconexão automática ao carregar a página game.html
+      const teamName = localStorage.getItem('teamName');
+      const roomCodeMultiplayer = localStorage.getItem('roomCode');
+      const groupUUID = localStorage.getItem('groupUUID'); // Certifique-se de pegar o groupUUID
+      if (teamName && roomCodeMultiplayer && groupUUID && window.salaSocket) {
+        window.salaSocket.entrarSala(roomCodeMultiplayer, teamName, (res) => {
           if (!res.sucesso) {
             alert('Erro ao reconectar à sala de jogo: ' + (res.mensagem || 'Desconhecido') + '. Redirecionando para tela inicial.');
             window.location.href = '../index.html'; // Redireciona se não conseguir reconectar
@@ -56,69 +57,61 @@
             console.log('[GAME] Reconectado à sala de jogo com sucesso.');
             // Após reconectar, pedir o estado atual do jogo
             window.salaSocket.pedirEstadoSala(roomCodeMultiplayer, (estado) => {
-            if (estado) {
-              console.log('[GAME] Estado inicial recebido ao reconectar:', estado);
-              // Chame a função de renderização do main.js
-              if (typeof renderMultiplayerState === 'function') {
-                renderMultiplayerState(estado);
-              }
-              // Salvar estado no localStorage para backup
-              localStorage.setItem('lastGameState', JSON.stringify(estado));
-              
-              // Verificação adicional após renderização
-              setTimeout(() => {
-                const answerArea = document.getElementById('answer-area');
-                const teamName = localStorage.getItem('teamName');
-                const grupoIndex = estado.grupos.findIndex(g => g.nome === teamName);
-                
-                if (estado.turno === grupoIndex && grupoIndex !== -1 && answerArea && answerArea.style.display === 'none') {
-                  console.log('[GAME] Corrigindo input oculto após reconexão');
-                  answerArea.style.display = 'block';
+              if (estado) {
+                console.log('[GAME] Estado inicial recebido ao reconectar:', estado);
+                // Chame a função de renderização do main.js
+                if (typeof renderMultiplayerState === 'function') {
+                  renderMultiplayerState(estado);
                 }
-              }, 200);
-            } else {
-              console.warn('[GAME] Não foi possível obter o estado inicial da sala. Sala pode não estar no estado de jogo ou expirou.');
-              // Tentar usar estado salvo como fallback
-              const savedState = localStorage.getItem('lastGameState');
-              if (savedState && typeof renderMultiplayerState === 'function') {
-                console.log('[GAME] Usando estado salvo como fallback');
-                renderMultiplayerState(JSON.parse(savedState));
+                // Salvar estado no localStorage para backup
+                localStorage.setItem('lastGameState', JSON.stringify(estado));
+                // Verificação adicional após renderização
+                setTimeout(() => {
+                  const answerArea = document.getElementById('answer-area');
+                  const teamName = localStorage.getItem('teamName');
+                  const grupoIndex = estado.grupos.findIndex(g => g.nome === teamName);
+                  if (estado.turno === grupoIndex && grupoIndex !== -1 && answerArea && answerArea.style.display === 'none') {
+                    console.log('[GAME] Corrigindo input oculto após reconexão');
+                    answerArea.style.display = 'block';
+                  }
+                }, 200);
+              } else {
+                console.warn('[GAME] Não foi possível obter o estado inicial da sala. Sala pode não estar no estado de jogo ou expirou.');
+                // Tentar usar estado salvo como fallback
+                const savedState = localStorage.getItem('lastGameState');
+                if (savedState && typeof renderMultiplayerState === 'function') {
+                  console.log('[GAME] Usando estado salvo como fallback');
+                  renderMultiplayerState(JSON.parse(savedState));
+                }
               }
-            }
-          });
+            });
+          }
+        }, groupUUID); // Passe o groupUUID para entrarSala
+      }
+      // Controle de áudio
+      document.getElementById('audio-toggle').addEventListener('click', function() {
+        const button = this;
+        if (typeof toggleMute === 'function') {
+          const isMuted = toggleMute();
+          button.textContent = isMuted ? '🔇' : '🔊';
+          button.title = isMuted ? 'Ativar Áudio' : 'Desativar Áudio';
         }
-      }, groupUUID); // Passe o groupUUID para entrarSala
-    }
-    
-    // Controle de áudio
-    document.getElementById('audio-toggle').addEventListener('click', function() {
-      const button = this;
-      if (typeof toggleMute === 'function') {
-        const isMuted = toggleMute();
-        button.textContent = isMuted ? '🔇' : '🔊';
-        button.title = isMuted ? 'Ativar Áudio' : 'Desativar Áudio';
+      });
+      function animateTimerDanger() {
+        const timerEl = document.getElementById('timer');
+        timerEl.classList.add('danger');
+        timerEl.style.animation = 'shake 0.5s infinite alternate';
+      }
+      function removeTimerDanger() {
+        const timerEl = document.getElementById('timer');
+        timerEl.classList.remove('danger');
+        timerEl.style.animation = '';
+      }
+      const savedState = localStorage.getItem('lastGameState');
+      if (savedState && typeof renderMultiplayerState === 'function') {
+        renderMultiplayerState(JSON.parse(savedState));
       }
     });
-    
-    function animateTimerDanger() {
-      const timerEl = document.getElementById('timer');
-      timerEl.classList.add('danger');
-      timerEl.style.animation = 'shake 0.5s infinite alternate';
-    }
-    function removeTimerDanger() {
-      const timerEl = document.getElementById('timer');
-      timerEl.classList.remove('danger');
-      timerEl.style.animation = '';
-    }
-
-    const savedState = localStorage.getItem('lastGameState');
-      if (savedState && typeof renderMultiplayerState === 'function') {
-        console.log('[GAME] Aplicando estado salvo como fallback');
-        renderMultiplayerState(JSON.parse(savedState));
-      } else {
-        console.log('[GAME] Nenhum estado salvo disponível ou função não encontrada');
-      }
-
   </script>
   <script type="module" src="../js/main.js"></script>
   <style>

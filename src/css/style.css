@@ -244,6 +244,14 @@ button:active {
   100% { transform: translateX(0); }
 }
 
+#hints-area {
+  min-height: 48px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  margin-bottom: 18px;
+}
+
 @media (max-width: 600px) {
   #app {
     max-width: 100vw;
@@ -252,6 +260,14 @@ button:active {
   .card {
     padding: 16px 6px 12px 6px;
     max-width: 98vw;
+    margin-bottom: 18px;
+  }
+  #hints-area {
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    margin-bottom: 14px;
   }
   #timer {
     width: 64px;
