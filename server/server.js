@@ -426,19 +426,19 @@ io.on('connection', (socket) => {
     const sala = salas[codigo];
     console.log('[DEBUG][entrarSala] Parâmetros recebidos:', { codigo, nomeGrupo, groupUUID });
     if (!sala) return callback({ sucesso: false, mensagem: 'Sala não encontrada.' });
-    // Se já existe um grupo com o mesmo groupUUID, atualize o id e nome, não adicione novo grupo
+    // Se já existe um grupo com o mesmo groupUUID, reativa se estiver desconectado
     let grupoExistente = null;
     if (groupUUID) {
       grupoExistente = sala.grupos.find(g => g.groupUUID === groupUUID);
-      console.log('[DEBUG][entrarSala] Grupos atuais na sala:', sala.grupos.map(g => ({ nome: g.nome, groupUUID: g.groupUUID, id: g.id })));
+      console.log('[DEBUG][entrarSala] Grupos atuais na sala:', sala.grupos.map(g => ({ nome: g.nome, groupUUID: g.groupUUID, id: g.id, desconectado: g.desconectado })));
       if (grupoExistente) {
         console.log('[DEBUG][entrarSala] Grupo existente encontrado para groupUUID:', groupUUID, '| grupo:', grupoExistente);
         grupoExistente.id = socket.id;
         grupoExistente.nome = nomeGrupo;
-        grupoExistente.pronto = false; // Ao reconectar, volta a não estar pronto
+        grupoExistente.pronto = false;
+        grupoExistente.desconectado = false;
         socket.join(codigo);
         socket.sala = codigo;
-        // Cancelar timeout de remoção se alguém reconectar
         if (salaTimeouts[codigo]) {
           clearTimeout(salaTimeouts[codigo]);
           delete salaTimeouts[codigo];
@@ -454,11 +454,10 @@ io.on('connection', (socket) => {
       sala.grupos = sala.grupos.filter(g => g.groupUUID !== groupUUID);
     }
     if (sala.grupos.length >= 2) return callback({ sucesso: false, mensagem: 'Sala cheia.' });
-    sala.grupos.push({ id: socket.id, nome: nomeGrupo, pronto: false, groupUUID });
+    sala.grupos.push({ id: socket.id, nome: nomeGrupo, pronto: false, groupUUID, desconectado: false });
     console.log('[DEBUG][entrarSala] Novo grupo adicionado:', { id: socket.id, nome: nomeGrupo, pronto: false, groupUUID });
     socket.join(codigo);
     socket.sala = codigo;
-    // Cancelar timeout de remoção se alguém reconectar
     if (salaTimeouts[codigo]) {
       clearTimeout(salaTimeouts[codigo]);
       delete salaTimeouts[codigo];
@@ -655,17 +654,28 @@ io.on('connection', (socket) => {
     const codigo = socket.sala;
     if (!codigo || !salas[codigo]) return;
     const sala = salas[codigo];
-    // Remove apenas o grupo do socket desconectado
-    sala.grupos = sala.grupos.filter(g => g.id !== socket.id);
-    if (sala.grupos.length === 0) {
-      // Inicia timeout para remoção da sala
+    // Marcar grupo como desconectado
+    const grupo = sala.grupos.find(g => g.id === socket.id);
+    if (grupo) {
+      grupo.desconectado = true;
+      grupo.id = null; // Limpa id do socket
+      console.log(`[LOG] Grupo ${grupo.nome} marcado como desconectado na sala ${codigo}`);
+    }
+    // Se todos os grupos estão desconectados, inicia timeout para remoção da sala
+    const todosDesconectados = sala.grupos.every(g => g.desconectado);
+    if (todosDesconectados) {
       if (salaTimeouts[codigo]) clearTimeout(salaTimeouts[codigo]);
       salaTimeouts[codigo] = setTimeout(() => {
-        delete salas[codigo];
-        delete salaTimeouts[codigo];
-        delete gameTimers[codigo]; // Limpar timer da sala
-        console.log(`Sala ${codigo} removida (timeout atingido).`);
-      }, 2 * 60 * 1000); // 2 minutos
+        // Remove grupos desconectados
+        sala.grupos = sala.grupos.filter(g => !g.desconectado);
+        // Se não sobrou ninguém, remove a sala
+        if (sala.grupos.length === 0) {
+          delete salas[codigo];
+          delete salaTimeouts[codigo];
+          delete gameTimers[codigo];
+          console.log(`Sala ${codigo} removida (timeout atingido).`);
+        }
+      }, 2 * 60 * 1000);
       console.log(`Sala ${codigo} ficará reservada por 2 minutos para reconexão.`);
     } else {
       io.to(codigo).emit('atualizarSala', { grupos: sala.grupos });

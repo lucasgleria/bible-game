@@ -21,13 +21,14 @@
     // Reconectar automaticamente à sala ao carregar
     const teamName = localStorage.getItem('teamName');
     const roomCode = localStorage.getItem('roomCode');
-    if (teamName && roomCode) {
+    const groupUUID = localStorage.getItem('groupUUID');
+    if (teamName && roomCode && groupUUID) {
       window.salaSocket.entrarSala(roomCode, teamName, (res) => {
         if (!res.sucesso) {
           alert('Erro ao reconectar à sala: ' + (res.mensagem || 'Desconhecido'));
           window.location.href = '../index.html';
         }
-      });
+      }, groupUUID);
     }
     // Exibir código da sala
     const roomCodeDiv = document.getElementById('room-code-display');
