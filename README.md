@@ -2,30 +2,31 @@
 
 Um jogo educativo multiplayer de perguntas e respostas baseado em personagens, lugares e acontecimentos da Bíblia. Ideal para dinâmicas em grupos de jovens, escolas dominicais ou encontros familiares.
 
-[](https://www.google.com/search?q=LICENSE)
-[](https://www.google.com/search?q=)
-[](https://www.google.com/search?q=)
-[](https://www.google.com/search?q=)
+[![Licença](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-5.5.5-green.svg)]()
+[![Status](https://img.shields.io/badge/status-em_desenvolvimento-yellow.svg)]()
+[![deploy](https://img.shields.io/badge/depoly-inactive-red.svg)]()
+
 
 ## 📌 Sumário
 
-1.  [Sobre o Projeto](https://www.google.com/search?q=%23-sobre-o-projeto)
-2.  [Objetivos](https://www.google.com/search?q=%23-objetivos)
-3.  [Tecnologias](https://www.google.com/search?q=%23-tecnologias)
-4.  [Funcionalidades](https://www.google.com/search?q=%23-funcionalidades)
-5.  [Pré-requisitos](https://www.google.com/search?q=%23%25EF%25B8%258F-pr%C3%A9-requisitos)
-6.  [Instalação e Execução](https://www.google.com/search?q=%23%25EF%25B8%258F-instala%25C3%25A7%25C3%25A3o-e-execu%25C3%25A7%25C3%25A3o)
-7.  [Como Jogar](https://www.google.com/search?q=%23-como-jogar)
-8.  [Estrutura do Projeto](https://www.google.com/search?q=%23-estrutura-do-projeto)
-9.  [Sistema de Pontuação](https://www.google.com/search?q=%23-sistema-de-pontua%25C3%25A7%25C3%25A3o)
-10. [Sistema de Privacidade](https://www.google.com/search?q=%23-sistema-de-privacidade)
-11. [Personalização](https://www.google.com/search?q=%23-personaliza%25C3%25A7%25C3%25A3o)
-12. [Leaderboard](https://www.google.com/search?q=%23-leaderboard)
-13. [Solução de Problemas](https://www.google.com/search?q=%23-solu%25C3%25A7%25C3%25A3o-de-problemas)
-14. [Contribuição](https://www.google.com/search?q=%23-contribui%25C3%25A7%25C3%25A3o)
-15. [Licença](https://www.google.com/search?q=%23-licen%25C3%25A7a)
-16. [Contato](https://www.google.com/search?q=%23-contato)
-17. [Recursos Adicionais](https://www.google.com/search?q=%23-recursos-adicionais)
+1.  [Sobre o Projeto]()
+2.  [Objetivos]()
+3.  [Tecnologias]()
+4.  [Funcionalidades]()
+5.  [Pré-requisitos]()
+6.  [Instalação e Execução]()
+7.  [Como Jogar]()
+8.  [Estrutura do Projeto]()
+9.  [Sistema de Pontuação]()
+10. [Sistema de Privacidade]()
+11. [Personalização]()
+12. [Leaderboard]()
+13. [Solução de Problemas]()
+14. [Contribuição]()
+15. [Licença]()
+16. [Contato]()
+17. [Recursos Adicionais]()
 
 ## 💻 Sobre o Projeto
 
