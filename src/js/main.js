@@ -107,22 +107,26 @@ window.renderMultiplayerState = function(estado) {
     return;
   }
 
-  category.textContent = `Categoria: ${estado.carta.categoria}`;
-  // Renderizar dicas SEMPRE
-  hints.innerHTML = '';
-  let dicasParaExibir = estado.carta.dicas;
-  console.log('[DEBUG] Dicas recebidas:', dicasParaExibir);
-  // Removi a lógica 'dicasOriginais' pois o backend já envia as dicas corretas
-  dicasParaExibir.forEach((hint, i) => {
-    let li = document.createElement('li');
-    li.textContent = `${i + 1}. ${hint}`;
-    hints.appendChild(li);
-  });
-  // Exibir input de resposta apenas para o grupo da vez
-  console.log('[DEBUG] Verificando exibição do input - Turno:', estado.turno, '| Grupo local:', grupoIndex);
+  // === NOVA LÓGICA DE PRIVACIDADE ===
+  const isMyTurn = estado.turno === grupoIndex && grupoIndex !== -1;
+  const currentPlayingGroup = estado.grupos[estado.turno];
   
-  if (estado.turno === grupoIndex && grupoIndex !== -1) {
-    console.log('[DEBUG] Mostrando input para o grupo da vez');
+  if (isMyTurn) {
+    // GRUPO QUE ESTÁ JOGANDO - Mostra tudo normalmente
+    console.log('[DEBUG] Mostrando interface completa para grupo que está jogando');
+    
+    // Mostrar categoria e dicas
+    category.textContent = `Categoria: ${estado.carta.categoria}`;
+    hints.innerHTML = '';
+    let dicasParaExibir = estado.carta.dicas;
+    console.log('[DEBUG] Dicas recebidas:', dicasParaExibir);
+    dicasParaExibir.forEach((hint, i) => {
+      let li = document.createElement('li');
+      li.textContent = `${i + 1}. ${hint}`;
+      hints.appendChild(li);
+    });
+    
+    // Mostrar input de resposta
     answerArea.style.display = 'block';
     const guessInput = answerArea.querySelector('#guess');
     const answerBtn = answerArea.querySelector('button');
@@ -132,25 +136,50 @@ window.renderMultiplayerState = function(estado) {
     }
     if (answerBtn) answerBtn.disabled = false;
     
-    // Mostrar botão de dica apenas para o grupo da vez
+    // Mostrar botão de dica
     const dicaBtn = document.getElementById('dica-btn');
     if (dicaBtn) {
       dicaBtn.style.display = 'block';
       dicaBtn.disabled = false;
     }
+    
+    // Limpar mensagem de aguardo
+    document.getElementById('result').textContent = '';
+    
   } else {
-    console.log('[DEBUG] Ocultando input - não é o turno do grupo local');
+    // GRUPO QUE ESTÁ AGUARDANDO - Oculta informações sensíveis
+    console.log('[DEBUG] Ocultando informações para grupo que está aguardando');
+    
+    // Ocultar categoria e dicas
+    category.textContent = 'Aguarde sua vez...';
+    hints.innerHTML = '';
+    
+    // Ocultar input de resposta
     answerArea.style.display = 'none';
     
-    // Ocultar botão de dica para grupos que não estão na vez
+    // Ocultar botão de dica
     const dicaBtn = document.getElementById('dica-btn');
     if (dicaBtn) {
       dicaBtn.style.display = 'none';
     }
+    
+    // Mostrar mensagem de aguardo
+    const resultDiv = document.getElementById('result');
+    if (resultDiv) {
+      resultDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 12px; margin: 20px 0;">
+          <p style="font-size: 1.2em; font-weight: 600; color: var(--primary); margin-bottom: 10px;">
+            ${currentPlayingGroup ? currentPlayingGroup.nome : 'Grupo ' + (estado.turno + 1)} está jogando
+          </p>
+          <p style="color: #666; font-size: 1em;">
+            Aguarde a vez do seu grupo
+          </p>
+        </div>
+      `;
+    }
   }
-  document.getElementById('result').textContent = '';
   
-  // Renderizar timer se disponível
+  // Renderizar timer se disponível (sempre visível para ambos os grupos)
   if (estado.timer && typeof renderTimer === 'function') {
     console.log('[RENDER] Renderizando timer:', estado.timer);
     renderTimer(estado.timer.tempo, estado.timer.maxTempo);

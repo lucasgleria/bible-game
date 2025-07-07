@@ -604,19 +604,21 @@ io.on('connection', (socket) => {
       sala.pontuacao[turno] += pontos;
       sala.acertos[turno] += 1;
       
-      // Evento de áudio: sucesso
-      io.to(codigo).emit('audioEvent', { tipo: 'success', acao: 'play' });
+      // Evento de áudio: sucesso (apenas para o grupo que está jogando)
+      io.to(socket.id).emit('audioEvent', { tipo: 'success', acao: 'play' });
       
-      io.to(codigo).emit('feedback', { tipo: 'acerto', pontos });
+      // Feedback apenas para o grupo que está jogando
+      io.to(socket.id).emit('feedback', { tipo: 'acerto', pontos });
       
       // Continuar com nova pergunta (não parar timer)
       setTimeout(() => {
         proximaPergunta(codigo);
       }, 1200);
     } else {
-      // Evento de áudio: erro
+      // Evento de áudio: erro (apenas para o grupo que está jogando)
       io.to(socket.id).emit('audioEvent', { tipo: 'buzzer', acao: 'play' });
       
+      // Feedback apenas para o grupo que está jogando
       io.to(socket.id).emit('feedback', { tipo: 'erro' });
       // NÃO chamar proximaPergunta ao errar, apenas atualize o estado para mostrar feedback
       // A carta permanece até acertar ou acabar o tempo

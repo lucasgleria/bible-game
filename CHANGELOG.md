@@ -2,6 +2,65 @@
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
+## [1.1.0] - Janeiro 2024
+
+### 🔒 Sistema de Privacidade entre Grupos
+
+#### ✅ Adicionado
+- **Privacidade de Jogo**: Cada grupo vê apenas suas próprias informações durante o jogo
+- **Interface de Aguardo**: Mensagem clara para grupos que não estão jogando
+- **Feedback Privado**: Acertos e erros visíveis apenas para quem está jogando
+- **Áudio Seletivo**: Sons de acerto/erro apenas para o grupo ativo
+- **Timer Compartilhado**: Ambos os grupos veem a mesma contagem regressiva
+
+#### 🎯 Funcionalidades de Privacidade
+- **Grupo que está jogando**: 
+  - Vê categoria da pergunta
+  - Vê dicas progressivas
+  - Pode digitar resposta
+  - Pode pedir dicas extras
+  - Recebe feedback de acerto/erro
+  - Vê timer
+- **Grupo que está aguardando**:
+  - Vê mensagem "Grupo X está jogando, aguarde sua vez"
+  - Vê timer (mesmo tempo)
+  - Vê placar atualizado
+  - Não vê perguntas nem dicas
+  - Não recebe feedback de acerto/erro
+
+#### 🔧 Modificações Técnicas
+- **Frontend**: Função `renderMultiplayerState` em `src/js/main.js` atualizada
+- **Backend**: Eventos de feedback em `server/server.js` modificados
+- **Arquitetura**: Sistema de privacidade centralizado e modular
+- **UX**: Interface de aguardo com design consistente
+
+#### 📁 Arquivos Modificados
+```
+src/js/main.js
+├── renderMultiplayerState() - Lógica de privacidade implementada
+├── Interface condicional baseada no turno do grupo
+└── Mensagem de aguardo para grupos não ativos
+
+server/server.js
+├── Evento 'responder' - Feedback privado implementado
+├── io.to(socket.id).emit() - Envio seletivo de eventos
+└── Áudio privado para acertos e erros
+```
+
+#### 🎮 Experiência do Usuário
+- **Justiça**: Grupos não veem informações sensíveis uns dos outros
+- **Clareza**: Mensagem clara sobre quem está jogando
+- **Engajamento**: Timer compartilhado mantém todos conectados
+- **Competição**: Placar sempre visível para acompanhar progresso
+
+#### 🔮 Benefícios da Implementação
+- **Segurança**: Informações de jogo protegidas entre grupos
+- **Performance**: Menos dados enviados (feedback apenas para quem precisa)
+- **Escalabilidade**: Sistema preparado para futuras expansões
+- **Manutenibilidade**: Código modular e bem documentado
+
+---
+
 ## [1.0.1] - Janeiro 2024
 
 ### 🎵 Sistema de Áudio Reorganizado
