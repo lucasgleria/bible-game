@@ -1,4 +1,4 @@
-# Perfil Bíblico
+# 🎴Perfil Bíblico
 
 Um jogo educativo multiplayer de perguntas e respostas baseado em personagens, lugares e acontecimentos da Bíblia. Ideal para dinâmicas em grupos de jovens, escolas dominicais ou encontros familiares.
 
