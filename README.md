@@ -340,7 +340,7 @@ Para manter um histórico de commits claro e consistente, sugerimos o uso da seg
 
 Este projeto está licenciado sob a **MIT License**.
 Você pode usar, copiar, modificar, mesclar, publicar, distribuir, sublicenciar e/ou vender cópias do software para fins educacionais e recreativos.
-Veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
+Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ## 📞 Contato
 
