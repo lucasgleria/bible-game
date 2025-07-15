@@ -6,17 +6,18 @@ let timer;
 
 export function startTimer(onTimeUp) {
   clearInterval(timer);
-  let timeLeft = 60;
-  renderTimer(timeLeft, 60);
+  let timeLeft = 30;
+  renderTimer(timeLeft, 30);
   
   // Parar qualquer heartbeat anterior
   stopHeartbeat();
 
+  // Timer de 30 segundos (unificado com backend)
   timer = setInterval(() => {
     timeLeft--;
-    renderTimer(timeLeft, 60);
+    renderTimer(timeLeft, 30);
     
-    // Tocar heartbeat quando chegar nos últimos 11 segundos
+    // Tocar heartbeat quando chegar nos últimos 11 segundos de 30
     if (timeLeft === 11) {
       playHeartbeat();
     }

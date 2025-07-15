@@ -4,7 +4,6 @@
 class AudioManager {
   constructor() {
     this.sounds = {};
-    this.isMuted = false;
     this.init();
   }
 
@@ -15,6 +14,8 @@ class AudioManager {
     this.loadSound('heartbeat', '/src/assets/audio/heartbeat.mp3');
     this.loadSound('victory', '/src/assets/audio/victory.mp3');
     this.loadSound('lost', '/src/assets/audio/lost.mp3');
+    // Adicionar som silencioso para liberar contexto de áudio
+    this.loadSound('silent', '/src/assets/audio/silent.mp3');
   }
 
   loadSound(name, src) {
@@ -25,13 +26,14 @@ class AudioManager {
   }
 
   play(name) {
-    if (this.isMuted) return;
-    
     const sound = this.sounds[name];
     if (sound) {
+      console.log(`[AUDIO] Tentando tocar: ${name}`);
       // Reset do áudio para permitir múltiplas reproduções
       sound.currentTime = 0;
-      sound.play().catch(error => {
+      sound.play().then(() => {
+        console.log(`[AUDIO] Reprodução iniciada com sucesso: ${name}`);
+      }).catch(error => {
         console.warn(`[AUDIO] Erro ao tocar ${name}:`, error);
       });
     } else {
@@ -59,24 +61,6 @@ class AudioManager {
       sound.volume = Math.max(0, Math.min(1, volume));
     });
   }
-
-  mute() {
-    this.isMuted = true;
-    this.stopAll();
-  }
-
-  unmute() {
-    this.isMuted = false;
-  }
-
-  toggleMute() {
-    if (this.isMuted) {
-      this.unmute();
-    } else {
-      this.mute();
-    }
-    return !this.isMuted;
-  }
 }
 
 // Instância global do gerenciador de áudio
@@ -92,6 +76,7 @@ export function playBuzzer() {
 }
 
 export function playHeartbeat() {
+  console.log('[AUDIO] playHeartbeat chamado - deve tocar heartbeat');
   audioManager.play('heartbeat');
 }
 
@@ -115,13 +100,23 @@ export function setAudioVolume(volume) {
   audioManager.setVolume(volume);
 }
 
-export function toggleMute() {
-  return audioManager.toggleMute();
+// Função para liberar contexto de áudio na primeira interação do usuário
+export function liberarAudioNoPrimeiroClique() {
+  window.removeEventListener('click', liberarAudioNoPrimeiroClique);
+  window.removeEventListener('keydown', liberarAudioNoPrimeiroClique);
+  try {
+    audioManager.play('silent'); // Toca um som silencioso
+    if (window.AudioContext || window.webkitAudioContext) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
+    }
+  } catch (e) {
+    // Ignorar erros
+  }
 }
 
-export function isMuted() {
-  return audioManager.isMuted;
-}
-
-// Exportar a instância para uso direto se necessário
-export { audioManager }; 
+// Expor audioManager globalmente para depuração, mesmo em módulos ES6
+if (typeof window !== 'undefined') {
+  window.audioManager = audioManager;
+  console.log('audioManager global:', window.audioManager);
+} 

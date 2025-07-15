@@ -4,7 +4,7 @@
 import { loadCards } from './cards.js';
 import { startGame, checkAnswer, nextRound, highlightGroupTurn } from './gameLogic.js';
 import { showFeedback, renderTimer } from './ui.js';
-import { playSuccess, playBuzzer, playHeartbeat, stopHeartbeat, toggleMute, setAudioVolume, playVictory, playLost } from './audio.js';
+import { playSuccess, playBuzzer, playHeartbeat, stopHeartbeat, setAudioVolume, playVictory, playLost, liberarAudioNoPrimeiroClique } from './audio.js';
 
 // Variável global para armazenar estado atual
 let estadoAtual = null;
@@ -296,7 +296,8 @@ function showRoundEndFeedback(rodada, maxRodadas) {
   }, 4000);
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
+// Remover qualquer referência ao botão de áudio
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('[MAIN] Iniciando carregamento...');
     
@@ -370,19 +371,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
       
       // Eventos de áudio do backend
-      window.salaSocket.onAudioEvent((data) => {
-        console.log('[AUDIO] Evento recebido:', data);
-      });
-      
-      // Controle de áudio
-      const audioToggle = document.getElementById('audio-toggle');
-      if (audioToggle) {
-        audioToggle.addEventListener('click', function() {
-          const isMuted = toggleMute();
-          this.textContent = isMuted ? '🔇' : '🔊';
-          this.title = isMuted ? 'Ativar Áudio' : 'Desativar Áudio';
-        });
-      }
+      window.salaSocket.onAudioEvent();
       
       // Timer do jogo
       window.salaSocket.onAtualizarTimer(({ tempo, maxTempo }) => {
@@ -456,3 +445,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     alert('Erro ao carregar cartas do jogo ou inicializar main.js: ' + e.message);
   }
 });
+
+// Liberar contexto de áudio na primeira interação do usuário
+document.addEventListener('click', liberarAudioNoPrimeiroClique);
+document.addEventListener('keydown', liberarAudioNoPrimeiroClique);

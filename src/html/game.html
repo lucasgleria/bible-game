@@ -11,13 +11,6 @@
   <div id="app">
     <h1>Perfil Bíblico</h1>
     
-    <!-- Botão de controle de áudio -->
-    <div style="position: fixed; top: 10px; right: 10px; z-index: 1000;">
-      <button id="audio-toggle" style="background: var(--primary); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 16px;" title="Alternar Áudio">
-        🔊
-      </button>
-    </div>
-    
     <div class="card" id="game-card">
       <p id="category"></p>
       <div id="hints-area" class="hints-area" style="background:#fffbe6;border:2px solid #ffe066;border-radius:12px;padding:16px 10px 10px 10px;margin-bottom:18px;">
@@ -41,7 +34,7 @@
     <div id="feedback-animation" style="display:none;"></div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="../js/socket.js"></script>
+  <script type="module" src="../js/socket.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Reconexão automática ao carregar a página game.html
@@ -88,15 +81,6 @@
           }
         }, groupUUID); // Passe o groupUUID para entrarSala
       }
-      // Controle de áudio
-      document.getElementById('audio-toggle').addEventListener('click', function() {
-        const button = this;
-        if (typeof toggleMute === 'function') {
-          const isMuted = toggleMute();
-          button.textContent = isMuted ? '🔇' : '🔊';
-          button.title = isMuted ? 'Ativar Áudio' : 'Desativar Áudio';
-        }
-      });
       function animateTimerDanger() {
         const timerEl = document.getElementById('timer');
         timerEl.classList.add('danger');

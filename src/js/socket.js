@@ -1,6 +1,8 @@
 // src/js/socket.js
 // Funções de áudio serão chamadas diretamente quando disponíveis
 
+import { playHeartbeat, stopHeartbeat, playSuccess, playBuzzer, playVictory, playLost } from './audio.js';
+
 const socket = io();
 
 // Cria uma nova sala
@@ -66,6 +68,7 @@ function onTempoEsgotado(callback) {
 // Recebe eventos de áudio
 function onAudioEvent(callback) {
   socket.on('audioEvent', (data) => {
+    console.log('[SOCKET] audioEvent recebido:', data);
     // Executar ação de áudio baseada no tipo
     switch (data.tipo) {
       case 'success':
@@ -75,6 +78,7 @@ function onAudioEvent(callback) {
         if (typeof playBuzzer === 'function') playBuzzer();
         break;
       case 'heartbeat':
+        console.log('[SOCKET] Chamando playHeartbeat');
         if (data.acao === 'play') {
           if (typeof playHeartbeat === 'function') playHeartbeat();
         } else if (data.acao === 'stop') {
@@ -122,4 +126,9 @@ window.salaSocket = {
   configurarSala,
   pedirEstadoSala,
   _socket: socket
-}; 
+};
+
+// Expor socket no global para uso em scripts inline
+if (typeof window !== 'undefined') {
+  window.socket = socket;
+} 
