@@ -9,7 +9,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const PORT = 4001;
+// Trocar definição da porta para usar variável de ambiente
+const PORT = process.env.PORT || 4001;
 const LEADERBOARD_PATH = path.join(__dirname, 'leaderboard.json');
 
 // Middleware CORS para permitir requisições do frontend
@@ -687,6 +688,10 @@ io.on('connection', (socket) => {
   });
 });
 
+// Adicionar logs de ambiente e porta ao iniciar o servidor
 server.listen(PORT, () => {
+  console.log(`[DEPLOY] Ambiente: ${process.env.NODE_ENV}`);
+  console.log(`[DEPLOY] Porta: ${PORT}`);
+  console.log(`[DEPLOY] Diretório:`, __dirname);
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 }); 

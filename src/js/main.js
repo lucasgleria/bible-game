@@ -220,52 +220,12 @@ window.renderMultiplayerState = function(estado) {
 // Função para carregar e exibir o leaderboard
 async function loadLeaderboard() {
   try {
-    const response = await fetch('http://localhost:4001/leaderboard');
-    if (!response.ok) {
-      console.warn('[LEADERBOARD] Erro ao carregar leaderboard:', response.status);
-      return;
-    }
-    const leaderboard = await response.json();
-    
-    const container = document.getElementById('leaderboard-container');
-    if (!container) return;
-    
-    if (leaderboard.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">Nenhum resultado ainda. Seja o primeiro a jogar!</p>';
-      return;
-    }
-    
-    let html = '<div style="background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">';
-    html += '<h3 style="margin: 0 0 16px 0; color: var(--primary); text-align: center;">🏆 Top 10 Grupos</h3>';
-    
-    leaderboard.forEach((entry, index) => {
-      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-      const date = new Date(entry.data).toLocaleDateString('pt-BR');
-      
-      html += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2em;">${medal}</span>
-            <span style="font-weight: 600; color: var(--primary);">${entry.grupo}</span>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-weight: 600; color: var(--accent);">${entry.pontos} pts</div>
-            <div style="font-size: 0.8em; color: #666;">${entry.acertos} acertos</div>
-            <div style="font-size: 0.7em; color: #999;">${date}</div>
-          </div>
-        </div>
-      `;
-    });
-    
-    html += '</div>';
-    container.innerHTML = html;
-    
-  } catch (error) {
-    console.error('[LEADERBOARD] Erro ao carregar leaderboard:', error);
-    const container = document.getElementById('leaderboard-container');
-    if (container) {
-      container.innerHTML = '<p style="text-align: center; color: #666;">Erro ao carregar leaderboard</p>';
-    }
+    const baseURL = window.location.origin;
+    const response = await fetch(`${baseURL}/leaderboard`);
+    const data = await response.json();
+    renderLeaderboard(data);
+  } catch (err) {
+    console.error('[LEADERBOARD] Erro ao carregar leaderboard:', err);
   }
 }
 

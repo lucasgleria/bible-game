@@ -3,7 +3,8 @@
 
 import { playHeartbeat, stopHeartbeat, playSuccess, playBuzzer, playVictory, playLost } from './audio.js';
 
-const socket = io();
+// Trocar para inicialização dinâmica do socket
+const socket = io(window.location.origin);
 
 // Cria uma nova sala
 function criarSala(nomeGrupo, callback, groupUUID) {
